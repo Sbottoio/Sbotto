@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>sbotto.io - Bacheca P2P</title>
+<title>Bacheca Post-it P2P con Busta</title>
 <style>
 body{
   font-family:"Arial Rounded MT Bold", Arial, sans-serif;
@@ -12,7 +12,7 @@ body{
 .container{max-width:1200px; margin:auto; text-align:center;}
 h1{margin-bottom:10px;}
 
-/* Box introduttivo */
+/* Box introduttivo animato */
 .intro {
   max-width: 800px;
   margin: 10px auto 20px auto;
@@ -24,68 +24,10 @@ h1{margin-bottom:10px;}
   font-size: 15px;
   animation: lampeggioBox 1s infinite alternate;
   box-shadow: 0 0 8px rgba(0,0,0,0.1);
-  position: relative;
 }
 @keyframes lampeggioBox {
   from { background: #fff3cd; }
   to   { background: #ffeeba; }
-}
-.info-icon {
-  margin-left: 10px;
-  cursor: pointer;
-  font-size: 18px;
-}
-
-/* Presentazione */
-.presentazione {
-  max-width: 900px;
-  margin: 30px auto;
-  padding: 20px;
-  background: #ffffffc7;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
-  text-align: left;
-  font-size: 15px;
-  line-height: 1.6;
-}
-.presentazione h2 {
-  margin-top: 0;
-  color: #444;
-}
-.presentazione p {
-  margin-bottom: 15px;
-}
-
-/* Popup regolamento */
-#regolamentoBox {
-  display: none;
-  position: fixed;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  max-width: 500px;
-  background: #fff;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.3);
-  z-index: 3000;
-  text-align: left;
-}
-#regolamentoBox h2 {
-  margin-top: 0;
-}
-#regolamentoBox .close {
-  position: absolute;
-  top: 10px; right: 15px;
-  cursor: pointer;
-  font-size: 20px;
-}
-#overlay {
-  display: none;
-  position: fixed;
-  top:0; left:0;
-  width:100%; height:100%;
-  background: rgba(0,0,0,0.5);
-  z-index: 2000;
 }
 
 textarea{
@@ -164,7 +106,7 @@ body.dragging{ user-select:none; }
 /* Personalizzati solo da # */
 .red    {background:linear-gradient(135deg,#ff8a80,#e53935); color:#fff;}
 .lilla  {background:linear-gradient(135deg,#ce93d8,#8e24aa); color:#fff;}
-.fucsia,.fuxsia {background:linear-gradient(135deg,#f06292,#ad1457); color:#fff;}
+.fucsia,.fuxsia {background:linear-gradient(135deg,#f06292,#ad1457); color:#fff;} /* alias */
 
 /* Ghost (trasparente) */
 .ghost {
@@ -208,30 +150,10 @@ body.dragging{ user-select:none; }
   <div class="container">
     <h1>📌 Bacheca Post-it P2P</h1>
 
-    <!-- Box introduttivo breve -->
+    <!-- Box introduttivo animato -->
     <div class="intro">
       ⚡ Questa è una bacheca P2P in tempo reale!  
       Se qualcuno sposta un post-it da un altro dispositivo, tu lo vedrai muoversi qui 👀
-    </div>
-
-    <!-- Presentazione ufficiale -->
-    <div class="presentazione">
-      <h2>Cos'è sbotto.io?</h2>
-      <p>
-        <strong>sbotto.io</strong> è una bacheca digitale P2P (peer-to-peer) dove puoi scrivere post-it,
-        spostarli e condividerli in tempo reale con chiunque sia collegato.  
-        Non c’è un server centrale che controlla tutto: i dati viaggiano direttamente tra i dispositivi
-        degli utenti connessi, in maniera distribuita e autonoma.
-      </p>
-      <p>
-        Ogni volta che qualcuno scrive o muove un post-it da un altro dispositivo, tu lo vedrai subito
-        comparire o spostarsi davanti ai tuoi occhi. È come una lavagna collaborativa sempre viva,
-        senza log-in, senza registrazioni e senza tracce da nessuna parte.
-      </p>
-      <p>
-        È uno spazio libero per comunicare in modo creativo, veloce e diretto.  
-        Scrivi, trascina, osserva e divertiti: <em>lo sbotto è sempre in tempo reale!</em> ⚡
-      </p>
     </div>
 
     <textarea id="noteInput" placeholder="Scrivi qui il tuo post-it (max 40 caratteri)..."></textarea>
@@ -297,17 +219,33 @@ body.dragging{ user-select:none; }
     y = Math.max(0, Math.min(y, maxY));
     el.style.left = x + "px";
     el.style.top  = y + "px";
+
+    // controllo busta
+    const shareZone = document.getElementById("shareZone").getBoundingClientRect();
+    if(e.clientX > shareZone.left && e.clientX < shareZone.right &&
+       e.clientY > shareZone.top && e.clientY < shareZone.bottom){
+        document.getElementById("shareZone").classList.add("active");
+        drag.overShare = true;
+    } else {
+        document.getElementById("shareZone").classList.remove("active");
+        drag.overShare = false;
+    }
   }
 
   function pointerUp(){
     if(!drag) return;
-    const { id, el } = drag;
-    const n = store[id];
-    if(n){
-      n.x = parseInt(el.style.left)||0;
-      n.y = parseInt(el.style.top)||0;
-      notesDB.get(id).put({ x:n.x, y:n.y });
+    const { id, el, overShare } = drag;
+    if(overShare){
+      condividiNota(id);
+    } else {
+      const n = store[id];
+      if(n){
+        n.x = parseInt(el.style.left)||0;
+        n.y = parseInt(el.style.top)||0;
+        notesDB.get(id).put({ x:n.x, y:n.y });
+      }
     }
+    document.getElementById("shareZone").classList.remove("active");
     document.body.classList.remove("dragging");
     drag = null;
   }
