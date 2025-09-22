@@ -10,7 +10,25 @@ body{
   background:#f3efe6; margin:0; padding:20px;
 }
 .container{max-width:1200px; margin:auto; text-align:center;}
-h1{margin-bottom:20px;}
+h1{margin-bottom:10px;}
+
+/* Box introduttivo animato */
+.intro {
+  max-width: 800px;
+  margin: 10px auto 20px auto;
+  padding: 15px 20px;
+  border-radius: 8px;
+  background: #fff3cd;
+  color: #856404;
+  font-weight: bold;
+  font-size: 15px;
+  animation: lampeggioBox 1s infinite alternate;
+  box-shadow: 0 0 8px rgba(0,0,0,0.1);
+}
+@keyframes lampeggioBox {
+  from { background: #fff3cd; }
+  to   { background: #ffeeba; }
+}
 
 textarea{
   width:100%; height:80px; padding:10px; border-radius:5px;
@@ -41,7 +59,7 @@ button:hover{background:#f4511e;}
   cursor:grab;
   display:flex; flex-direction:column; justify-content:flex-start; align-items:center;
   box-shadow:-3px 3px 6px rgba(0,0,0,.25), inset 0 0 30px rgba(255,255,255,.3);
-  transition: box-shadow .15s;
+  transition: left 0.5s ease, top 0.5s ease, transform 0.3s ease, box-shadow .15s;
   touch-action:none;
 }
 .note:active{cursor:grabbing;}
@@ -131,6 +149,13 @@ body.dragging{ user-select:none; }
 <body>
   <div class="container">
     <h1>📌 Bacheca Post-it P2P</h1>
+
+    <!-- Box introduttivo animato -->
+    <div class="intro">
+      ⚡ Questa è una bacheca P2P in tempo reale!  
+      Se qualcuno sposta un post-it da un altro dispositivo, tu lo vedrai muoversi qui 👀
+    </div>
+
     <textarea id="noteInput" placeholder="Scrivi qui il tuo post-it (max 40 caratteri)..."></textarea>
 
     <div class="controls">
@@ -241,7 +266,6 @@ body.dragging{ user-select:none; }
       div.style.transform = `rotate(${n.rot}deg)`;
 
       let deleteBtn = "";
-      // niente X per i post-it speciali
       if(!["black","ghost","madama","red","lilla","fucsia"].includes(n.color)){
         deleteBtn = `<div class="delete" onclick="event.stopPropagation(); eliminaNota('${n.id}')">×</div>`;
       }
@@ -269,7 +293,6 @@ body.dragging{ user-select:none; }
     });
   }
 
-  /* --- Parser comandi speciali --- */
   function parseSpecial(input){
     const m = input.match(/^\s*#([a-zàèéìòóù]+)\b/i);
     if(!m) return null;
