@@ -1,1 +1,294 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Bacheca Post-it P2P con Busta</title>
+<style>
+body{
+  font-family:"Arial Rounded MT Bold", Arial, sans-serif;
+  background:#f3efe6; margin:0; padding:20px;
+}
+.container{max-width:1200px; margin:auto; text-align:center;}
+h1{margin-bottom:20px;}
 
+textarea{
+  width:100%; height:80px; padding:10px; border-radius:5px;
+  border:1px solid #ccc; resize:none; font-size:14px;
+}
+.controls{
+  margin:10px 0; display:flex; flex-wrap:wrap;
+  justify-content:center; gap:15px;
+}
+.controls label{font-weight:bold; margin-right:5px;}
+button{
+  margin-top:10px; padding:10px 20px; border:none; border-radius:5px;
+  background:#ff7043; color:#fff; cursor:pointer; font-weight:bold;
+}
+button:hover{background:#f4511e;}
+
+#board{
+  position:relative; width:100%; min-height:800px;
+  background:#fafafa; border:2px dashed #ccc; overflow:hidden;
+}
+
+/* Post-it */
+.note{
+  width:130px; height:130px;
+  padding:14px 10px 10px 10px;
+  border-radius:2px;
+  position:absolute; overflow:hidden;
+  cursor:grab;
+  display:flex; flex-direction:column; justify-content:flex-start; align-items:center;
+  box-shadow:-3px 3px 6px rgba(0,0,0,.25), inset 0 0 30px rgba(255,255,255,.3);
+  transition: box-shadow .15s;
+  touch-action:none;
+}
+.note:active{cursor:grabbing;}
+.note:hover{ box-shadow:-4px 4px 8px rgba(0,0,0,.35); }
+body.dragging{ user-select:none; }
+
+/* Angolo sollevato */
+.note::after{
+  content:""; position:absolute; right:0; bottom:0; width:40px; height:40px;
+  background:linear-gradient(135deg, rgba(0,0,0,.25), transparent 70%);
+  clip-path:polygon(100% 0, 0 100%, 100% 100%); pointer-events:none;
+}
+
+/* contenuti */
+.note .text{
+  font-size:13px; font-weight:bold; line-height:1.3; text-align:center; word-wrap:break-word;
+  margin-top:14px;
+}
+.note small{ font-size:10px; color:#444; margin-top:5px; }
+
+/* icona elimina */
+.note .delete{
+  position:absolute; top:6px; right:8px; cursor:pointer;
+  font-weight:bold; font-size:14px; display:none;
+}
+.note:hover .delete{ display:block; }
+
+/* Pin rosso */
+.note::before{
+  content:""; width:12px; height:12px;
+  background:radial-gradient(circle at 30% 30%, #ff5252, #c62828);
+  border-radius:50%; position:absolute; top:6px; left:calc(50% - 6px);
+  box-shadow:0 2px 5px rgba(0,0,0,.3);
+}
+
+/* Colori */
+.yellow{background:linear-gradient(135deg,#fff59d,#fdd835);}
+.blue  {background:linear-gradient(135deg,#90caf9,#42a5f5);}
+.green {background:linear-gradient(135deg,#a5d6a7,#66bb6a);}
+.pink  {background:linear-gradient(135deg,#f48fb1,#ec407a);}
+.orange{background:linear-gradient(135deg,#ffcc80,#fb8c00);}
+.black {background:linear-gradient(135deg,#000,#333); color:#fff;}
+
+/* Zona busta */
+#shareZone {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 80px;
+  height: 60px;
+  background: url('https://upload.wikimedia.org/wikipedia/commons/4/4e/Envelope_font_awesome.svg') no-repeat center/contain;
+  opacity: 0.6;
+  transition: transform 0.2s, opacity 0.2s;
+  z-index: 2000;
+}
+#shareZone.active {
+  opacity: 1;
+  transform: scale(1.1);
+}
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>📌 Bacheca Post-it P2P</h1>
+    <textarea id="noteInput" placeholder="Scrivi qui il tuo post-it (max 40 caratteri)..."></textarea>
+
+    <div class="controls">
+      <div>
+        <label>Colore Post-it:</label>
+        <select id="colorSelect">
+          <option value="yellow">Giallo</option>
+          <option value="blue">Blu</option>
+          <option value="green">Verde</option>
+          <option value="pink">Rosa</option>
+          <option value="orange">Arancione</option>
+        </select>
+      </div>
+      <div>
+        <label>Colore Testo:</label>
+        <select id="textColorSelect">
+          <option value="#000000">Nero</option>
+          <option value="#1e88e5">Blu</option>
+          <option value="#d32f2f">Rosso</option>
+          <option value="#388e3c">Verde</option>
+          <option value="#8e24aa">Viola</option>
+        </select>
+      </div>
+    </div>
+   
+    <button onclick="aggiungiNota()">Pubblica Post-it</button>
+    <div id="board"></div>
+  </div>
+
+  <!-- Busta di condivisione -->
+  <div id="shareZone"></div>
+
+  <!-- GUN + html2canvas -->
+  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+  <script>
+  const gun = Gun({
+    peers:[
+      "https://gun.database.eco/gun",
+      "https://peer.wallie.io/gun",
+      "https://gun-altcoins.herokuapp.com/gun"
+    ]
+  });
+  const notesDB = gun.get("p2p-postit");
+  let store = {};
+  let drag = null;
+
+  function pointerMove(e){
+    if(!drag) return;
+    e.preventDefault();
+    const board = document.getElementById("board");
+    const b = board.getBoundingClientRect();
+    const el = drag.el;
+    let x = e.clientX - b.left - drag.offsetX;
+    let y = e.clientY - b.top  - drag.offsetY;
+    const maxX = board.clientWidth  - el.offsetWidth;
+    const maxY = board.clientHeight - el.offsetHeight;
+    x = Math.max(0, Math.min(x, maxX));
+    y = Math.max(0, Math.min(y, maxY));
+    el.style.left = x + "px";
+    el.style.top  = y + "px";
+
+    // controllo busta
+    const shareZone = document.getElementById("shareZone").getBoundingClientRect();
+    if(e.clientX > shareZone.left && e.clientX < shareZone.right &&
+       e.clientY > shareZone.top && e.clientY < shareZone.bottom){
+        document.getElementById("shareZone").classList.add("active");
+        drag.overShare = true;
+    } else {
+        document.getElementById("shareZone").classList.remove("active");
+        drag.overShare = false;
+    }
+  }
+
+   function pointerUp(){
+    if(!drag) return;
+    const { id, el, overShare } = drag;
+    if(overShare){
+      condividiNota(id);
+    } else {
+      const n = store[id];
+      if(n){
+        n.x = parseInt(el.style.left)||0;
+        n.y = parseInt(el.style.top)||0;
+        notesDB.get(id).put({ x:n.x, y:n.y });
+      }
+    }
+    document.getElementById("shareZone").classList.remove("active");
+    document.body.classList.remove("dragging");
+    drag = null;
+  }
+  document.addEventListener("pointermove", pointerMove, {passive:false});
+  document.addEventListener("pointerup", pointerUp);
+
+  function render(){
+    const board = document.getElementById("board");
+    board.innerHTML="";
+    Object.values(store).forEach(n=>{
+      if(!n || n.deleted) return;
+      const div = document.createElement("div");
+      div.id = "note_"+n.id;
+      div.className = `note ${n.color}`;
+      div.style.color = n.textColor;
+      div.style.left = (n.x||0) + "px";
+      div.style.top  = (n.y||0) + "px";
+      div.style.transform = `rotate(${n.rot}deg)`;
+      div.innerHTML = `
+        <div class="delete" onclick="event.stopPropagation(); eliminaNota('${n.id}')">×</div>
+        ${n.moderator ? '<div style="position:absolute;top:5px;left:5px;font-size:20px;">☠️</div>' : ''}
+        <div class="text">${n.text}</div>
+        <small>${new Date(n.date).toLocaleString()}</small>
+      `;
+      div.addEventListener("pointerdown",(e)=>{
+        if(e.target.classList.contains("delete")) return;
+        const elRect = div.getBoundingClientRect();
+        drag = {
+          id: n.id, el: div,
+          offsetX: e.clientX - elRect.left,
+          offsetY: e.clientY - elRect.top
+        };
+        div.style.zIndex = 9999;
+        document.body.classList.add("dragging");
+        if(div.setPointerCapture) { try{ div.setPointerCapture(e.pointerId);}catch(_){ } }
+        e.preventDefault();
+      });
+      board.appendChild(div);
+    });
+  }
+
+  function aggiungiNota(){
+    let text = document.getElementById("noteInput").value.trim();
+    if(!text) return alert("Scrivi qualcosa!");
+    if(text.length > 40) text = text.substring(0,37)+"...";
+    const board = document.getElementById("board");
+    const maxX = Math.max(0, board.clientWidth-150);
+    const maxY = Math.max(0, board.clientHeight-150);
+    let note = {
+      id: Gun.text.random(16), text,
+      date: Date.now(),
+      x: Math.floor(Math.random()*maxX),
+      y: Math.floor(Math.random()*maxY),
+      rot: (Math.random()*10 - 5).toFixed(2)
+    };
+    if(text.startsWith("#mod")){
+      note.color="black"; note.textColor="#fff"; note.moderator=true;
+      note.text=text.replace("#mod","").trim();
+    } else {
+      note.color=document.getElementById("colorSelect").value;
+      note.textColor=document.getElementById("textColorSelect").value;
+    }
+    notesDB.get(note.id).put(note);
+    document.getElementById("noteInput").value="";
+  }
+
+  function eliminaNota(id){
+    if(!confirm("Vuoi eliminare questo post-it?")) return;
+    notesDB.get(id).put({deleted:true});
+  }
+
+  function condividiNota(id){
+    const div = document.getElementById("note_"+id);
+    if(!div) return;
+    html2canvas(div).then(canvas=>{
+      canvas.toBlob(blob=>{
+        const file = new File([blob], "postit.png", {type:"image/png"});
+        if(navigator.canShare && navigator.canShare({files:[file]})){
+          navigator.share({title:"Post-it",text:"📌 Guarda questo post-it:",files:[file]}).catch(()=>{});
+        } else {
+      const link = document.createElement("a");
+          link.href = URL.createObjectURL(blob);
+          link.download = "postit.png";
+          link.click();
+        }
+      });
+    });
+  }
+
+  notesDB.map().on((n,id)=>{
+    if(!n || !n.id || n.deleted){ delete store[id]; }
+    else { store[id]=Object.assign(store[id]||{}, n); }
+    render();
+  });
+  </script>
+</body>
+</html>    
