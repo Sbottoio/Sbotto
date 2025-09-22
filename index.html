@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8" />
@@ -77,13 +77,18 @@ body.dragging{ user-select:none; }
   box-shadow:0 2px 5px rgba(0,0,0,.3);
 }
 
-/* Colori */
+/* Colori standard */
 .yellow{background:linear-gradient(135deg,#fff59d,#fdd835);}
 .blue  {background:linear-gradient(135deg,#90caf9,#42a5f5);}
 .green {background:linear-gradient(135deg,#a5d6a7,#66bb6a);}
 .pink  {background:linear-gradient(135deg,#f48fb1,#ec407a);}
 .orange{background:linear-gradient(135deg,#ffcc80,#fb8c00);}
 .black {background:linear-gradient(135deg,#000,#333); color:#fff;}
+
+/* Colori speciali personalizzati */
+.red   {background:linear-gradient(135deg,#e53935,#b71c1c); color:#fff;}
+.lilla {background:linear-gradient(135deg,#ba68c8,#8e24aa); color:#fff;}
+.fuxsia{background:linear-gradient(135deg,#f06292,#ad1457); color:#fff;}
 
 /* Zona busta */
 #shareZone {
@@ -250,13 +255,25 @@ body.dragging{ user-select:none; }
       y: Math.floor(Math.random()*maxY),
       rot: (Math.random()*10 - 5).toFixed(2)
     };
+
+    // Post-it speciali
     if(text.startsWith("#mod")){
       note.color="black"; note.textColor="#fff"; note.moderator=true;
       note.text=text.replace("#mod","").trim();
+    } else if(text.startsWith("#red")){
+      note.color="red"; note.textColor="#fff";
+      note.text=text.replace("#red","").trim();
+    } else if(text.startsWith("#lilla")){
+      note.color="lilla"; note.textColor="#fff";
+      note.text=text.replace("#lilla","").trim();
+    } else if(text.startsWith("#fuxsia")){
+      note.color="fuxsia"; note.textColor="#fff";
+      note.text=text.replace("#fuxsia","").trim();
     } else {
       note.color=document.getElementById("colorSelect").value;
       note.textColor=document.getElementById("textColorSelect").value;
     }
+
     notesDB.get(note.id).put(note);
     document.getElementById("noteInput").value="";
   }
@@ -291,4 +308,4 @@ body.dragging{ user-select:none; }
   });
   </script>
 </body>
-</html>    
+</html>
