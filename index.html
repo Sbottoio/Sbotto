@@ -12,7 +12,7 @@ body{
 .container{max-width:1200px; margin:auto; text-align:center;}
 h1{margin-bottom:10px;}
 
-/* Box introduttivo animato */
+/* Box introduttivo */
 .intro {
   max-width: 800px;
   margin: 10px auto 20px auto;
@@ -24,10 +24,48 @@ h1{margin-bottom:10px;}
   font-size: 15px;
   animation: lampeggioBox 1s infinite alternate;
   box-shadow: 0 0 8px rgba(0,0,0,0.1);
+  position: relative;
 }
 @keyframes lampeggioBox {
   from { background: #fff3cd; }
   to   { background: #ffeeba; }
+}
+.info-icon {
+  margin-left: 10px;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+/* Popup regolamento */
+#regolamentoBox {
+  display: none;
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 500px;
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.3);
+  z-index: 3000;
+  text-align: left;
+}
+#regolamentoBox h2 {
+  margin-top: 0;
+}
+#regolamentoBox .close {
+  position: absolute;
+  top: 10px; right: 15px;
+  cursor: pointer;
+  font-size: 20px;
+}
+#overlay {
+  display: none;
+  position: fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background: rgba(0,0,0,0.5);
+  z-index: 2000;
 }
 
 textarea{
@@ -106,7 +144,7 @@ body.dragging{ user-select:none; }
 /* Personalizzati solo da # */
 .red    {background:linear-gradient(135deg,#ff8a80,#e53935); color:#fff;}
 .lilla  {background:linear-gradient(135deg,#ce93d8,#8e24aa); color:#fff;}
-.fucsia,.fuxsia {background:linear-gradient(135deg,#f06292,#ad1457); color:#fff;} /* alias */
+.fucsia,.fuxsia {background:linear-gradient(135deg,#f06292,#ad1457); color:#fff;}
 
 /* Ghost (trasparente) */
 .ghost {
@@ -150,10 +188,11 @@ body.dragging{ user-select:none; }
   <div class="container">
     <h1>📌 Bacheca Post-it P2P</h1>
 
-    <!-- Box introduttivo animato -->
+    <!-- Box introduttivo breve -->
     <div class="intro">
       ⚡ Questa è una bacheca P2P in tempo reale!  
       Se qualcuno sposta un post-it da un altro dispositivo, tu lo vedrai muoversi qui 👀
+      <span class="info-icon" onclick="toggleRegolamento()">ℹ️</span>
     </div>
 
     <textarea id="noteInput" placeholder="Scrivi qui il tuo post-it (max 40 caratteri)..."></textarea>
@@ -189,6 +228,28 @@ body.dragging{ user-select:none; }
   <!-- Busta di condivisione -->
   <div id="shareZone"></div>
 
+  <!-- Overlay + Box regolamento -->
+  <div id="overlay" onclick="toggleRegolamento()"></div>
+  <div id="regolamentoBox">
+    <div class="close" onclick="toggleRegolamento()">×</div>
+    <h2>📜 Regolamento</h2>
+    <ul>
+      <li>Messaggi brevi, max 40 caratteri</li>
+      <li>Usa colori o comandi speciali</li>
+      <li>No insulti, spam o contenuti illegali</li>
+      <li>I post-it speciali non si cancellano</li>
+    </ul>
+    <h2>🎨 Comandi speciali</h2>
+    <ul>
+      <li><code>#mod</code> → nero ☠️</li>
+      <li><code>#ghost</code> → trasparente 👻</li>
+      <li><code>#madama</code> → lampeggiante 🚨</li>
+      <li><code>#red</code> / <code>#rosso</code> → rosso 🔴</li>
+      <li><code>#lilla</code> → lilla 💜</li>
+      <li><code>#fucsia</code> / <code>#fuxsia</code> → fucsia 💖</li>
+    </ul>
+  </div>
+
   <!-- GUN + html2canvas -->
   <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -205,6 +266,18 @@ body.dragging{ user-select:none; }
   let store = {};
   let drag = null;
 
+  function toggleRegolamento(){
+    const box = document.getElementById("regolamentoBox");
+    const overlay = document.getElementById("overlay");
+    if(box.style.display === "block"){
+      box.style.display = "none";
+      overlay.style.display = "none";
+    } else {
+      box.style.display = "block";
+      overlay.style.display = "block";
+    }
+  }
+
   function pointerMove(e){
     if(!drag) return;
     e.preventDefault();
@@ -220,7 +293,6 @@ body.dragging{ user-select:none; }
     el.style.left = x + "px";
     el.style.top  = y + "px";
 
-    // controllo busta
     const shareZone = document.getElementById("shareZone").getBoundingClientRect();
     if(e.clientX > shareZone.left && e.clientX < shareZone.right &&
        e.clientY > shareZone.top && e.clientY < shareZone.bottom){
