@@ -85,10 +85,10 @@ body.dragging{ user-select:none; }
 .orange{background:linear-gradient(135deg,#ffcc80,#fb8c00);}
 .black {background:linear-gradient(135deg,#000,#333); color:#fff;}
 
-/* Nuovi colori personalizzati */
+/* Personalizzati solo da # */
 .red    {background:linear-gradient(135deg,#ff8a80,#e53935); color:#fff;}
 .lilla  {background:linear-gradient(135deg,#ce93d8,#8e24aa); color:#fff;}
-.fucsia {background:linear-gradient(135deg,#f06292,#ad1457); color:#fff;}
+.fucsia,.fuxsia {background:linear-gradient(135deg,#f06292,#ad1457); color:#fff;} /* alias */
 
 /* Ghost (trasparente) */
 .ghost {
@@ -142,9 +142,6 @@ body.dragging{ user-select:none; }
           <option value="green">Verde</option>
           <option value="pink">Rosa</option>
           <option value="orange">Arancione</option>
-          <option value="red">Rosso</option>
-          <option value="lilla">Lilla</option>
-          <option value="fucsia">Fucsia</option>
         </select>
       </div>
       <div>
@@ -210,7 +207,7 @@ body.dragging{ user-select:none; }
     }
   }
 
-   function pointerUp(){
+  function pointerUp(){
     if(!drag) return;
     const { id, el, overShare } = drag;
     if(overShare){
@@ -244,7 +241,6 @@ body.dragging{ user-select:none; }
       div.style.transform = `rotate(${n.rot}deg)`;
       div.innerHTML = `
         <div class="delete" onclick="event.stopPropagation(); eliminaNota('${n.id}')">×</div>
-        ${n.moderator ? '<div style="position:absolute;top:5px;left:5px;font-size:20px;">☠️</div>' : ''}
         <div class="text">${n.text}</div>
         <small>${new Date(n.date).toLocaleString()}</small>
       `;
@@ -265,6 +261,34 @@ body.dragging{ user-select:none; }
     });
   }
 
+  /* --- Parser comandi speciali --- */
+  function parseSpecial(input){
+    const m = input.match(/^\s*#([a-zàèéìòóù]+)\b/i);
+    if(!m) return null;
+    const tag = m[1].toLowerCase();
+    const rest = input.replace(/^\s*#[^\s]+\s*/,'').trim();
+
+    if(tag === 'mod'){
+      return { color:'black', textColor:'#fff', moderator:true, text:rest };
+    }
+    if(tag === 'ghost'){
+      return { color:'ghost', textColor:'rgba(0,0,0,0.3)', text:rest };
+    }
+    if(tag === 'madama'){
+      return { color:'madama', textColor:'#fff', text:rest };
+    }
+    if(tag === 'red' || tag === 'rosso'){
+      return { color:'red', textColor:'#fff', text:rest };
+    }
+    if(tag === 'lilla'){
+      return { color:'lilla', textColor:'#fff', text:rest };
+    }
+    if(tag === 'fucsia' || tag === 'fuxsia'){
+      return { color:'fucsia', textColor:'#fff', text:rest };
+    }
+    return null;
+  }
+
   function aggiungiNota(){
     let text = document.getElementById("noteInput").value.trim();
     if(!text) return alert("Scrivi qualcosa!");
@@ -282,27 +306,10 @@ body.dragging{ user-select:none; }
       rot: (Math.random()*10 - 5).toFixed(2)
     };
 
-    // ✅ Gestione comandi speciali
-    if(/^#mod\b/i.test(text)){
-      note.color = "black"; note.textColor="#fff"; note.moderator=true;
-      note.text = text.replace(/^#mod\b\s*/i,"").trim();
-    } else if(/^#ghost\b/i.test(text)){
-      note.color = "ghost"; note.textColor="rgba(0,0,0,0.3)";
-      note.text = text.replace(/^#ghost\b\s*/i,"").trim();
-    } else if(/^#madama\b/i.test(text)){
-      note.color = "madama"; note.textColor="#fff";
-      note.text = text.replace(/^#madama\b\s*/i,"").trim();
-    } else if(/^#red\b/i.test(text)){
-      note.color = "red"; note.textColor="#fff";
-      note.text = text.replace(/^#red\b\s*/i,"").trim();
-    } else if(/^#lilla\b/i.test(text)){
-      note.color = "lilla"; note.textColor="#fff";
-      note.text = text.replace(/^#lilla\b\s*/i,"").trim();
-    } else if(/^#fucsia\b/i.test(text)){
-      note.color = "fucsia"; note.textColor="#fff";
-      note.text = text.replace(/^#fucsia\b\s*/i,"").trim();
+    const special = parseSpecial(text);
+    if(special){
+      Object.assign(note, special);
     } else {
-      // 👉 Solo se NON è un comando speciale usa la select
       note.color = document.getElementById("colorSelect").value;
       note.textColor = document.getElementById("textColorSelect").value;
     }
@@ -325,7 +332,7 @@ body.dragging{ user-select:none; }
         if(navigator.canShare && navigator.canShare({files:[file]})){
           navigator.share({title:"Post-it",text:"📌 Guarda questo post-it:",files:[file]}).catch(()=>{});
         } else {
-      const link = document.createElement("a");
+          const link = document.createElement("a");
           link.href = URL.createObjectURL(blob);
           link.download = "postit.png";
           link.click();
