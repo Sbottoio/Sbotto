@@ -86,9 +86,9 @@ body.dragging{ user-select:none; }
 .black {background:linear-gradient(135deg,#000,#333); color:#fff;}
 
 /* Nuovi colori personalizzati */
-.red    {background:linear-gradient(135deg,#ff8a80,#e53935);}
-.lilla  {background:linear-gradient(135deg,#ce93d8,#8e24aa);}
-.fucsia {background:linear-gradient(135deg,#f06292,#ad1457);}
+.red    {background:linear-gradient(135deg,#ff8a80,#e53935); color:#fff;}
+.lilla  {background:linear-gradient(135deg,#ce93d8,#8e24aa); color:#fff;}
+.fucsia {background:linear-gradient(135deg,#f06292,#ad1457); color:#fff;}
 
 /* Ghost (trasparente) */
 .ghost {
@@ -272,26 +272,41 @@ body.dragging{ user-select:none; }
     const board = document.getElementById("board");
     const maxX = Math.max(0, board.clientWidth-150);
     const maxY = Math.max(0, board.clientHeight-150);
+
     let note = {
-      id: Gun.text.random(16), text,
+      id: Gun.text.random(16),
+      text,
       date: Date.now(),
       x: Math.floor(Math.random()*maxX),
       y: Math.floor(Math.random()*maxY),
       rot: (Math.random()*10 - 5).toFixed(2)
     };
-    if(text.startsWith("#mod")){
-      note.color="black"; note.textColor="#fff"; note.moderator=true;
-      note.text=text.replace("#mod","").trim();
-    } else if (/^#ghost\b/i.test(text)) {
-      note.color="ghost"; note.textColor="rgba(0,0,0,0.3)";
-      note.text=text.replace(/^#ghost\b\s*/i,"").trim();
-    } else if (/^#madama\b/i.test(text)) {
-      note.color="madama"; note.textColor="#fff";
-      note.text=text.replace(/^#madama\b\s*/i,"").trim();
+
+    // ✅ Gestione comandi speciali
+    if(/^#mod\b/i.test(text)){
+      note.color = "black"; note.textColor="#fff"; note.moderator=true;
+      note.text = text.replace(/^#mod\b\s*/i,"").trim();
+    } else if(/^#ghost\b/i.test(text)){
+      note.color = "ghost"; note.textColor="rgba(0,0,0,0.3)";
+      note.text = text.replace(/^#ghost\b\s*/i,"").trim();
+    } else if(/^#madama\b/i.test(text)){
+      note.color = "madama"; note.textColor="#fff";
+      note.text = text.replace(/^#madama\b\s*/i,"").trim();
+    } else if(/^#red\b/i.test(text)){
+      note.color = "red"; note.textColor="#fff";
+      note.text = text.replace(/^#red\b\s*/i,"").trim();
+    } else if(/^#lilla\b/i.test(text)){
+      note.color = "lilla"; note.textColor="#fff";
+      note.text = text.replace(/^#lilla\b\s*/i,"").trim();
+    } else if(/^#fucsia\b/i.test(text)){
+      note.color = "fucsia"; note.textColor="#fff";
+      note.text = text.replace(/^#fucsia\b\s*/i,"").trim();
     } else {
-      note.color=document.getElementById("colorSelect").value;
-      note.textColor=document.getElementById("textColorSelect").value;
+      // 👉 Solo se NON è un comando speciale usa la select
+      note.color = document.getElementById("colorSelect").value;
+      note.textColor = document.getElementById("textColorSelect").value;
     }
+
     notesDB.get(note.id).put(note);
     document.getElementById("noteInput").value="";
   }
