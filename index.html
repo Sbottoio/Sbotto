@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Bacheca Post-it P2P con Busta</title>
+<title>sbotto.io - Bacheca P2P</title>
 <style>
 body{
   font-family:"Arial Rounded MT Bold", Arial, sans-serif;
@@ -34,6 +34,26 @@ h1{margin-bottom:10px;}
   margin-left: 10px;
   cursor: pointer;
   font-size: 18px;
+}
+
+/* Presentazione */
+.presentazione {
+  max-width: 900px;
+  margin: 30px auto;
+  padding: 20px;
+  background: #ffffffc7;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  text-align: left;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.presentazione h2 {
+  margin-top: 0;
+  color: #444;
+}
+.presentazione p {
+  margin-bottom: 15px;
 }
 
 /* Popup regolamento */
@@ -192,7 +212,26 @@ body.dragging{ user-select:none; }
     <div class="intro">
       ⚡ Questa è una bacheca P2P in tempo reale!  
       Se qualcuno sposta un post-it da un altro dispositivo, tu lo vedrai muoversi qui 👀
-      <span class="info-icon" onclick="toggleRegolamento()">ℹ️</span>
+    </div>
+
+    <!-- Presentazione ufficiale -->
+    <div class="presentazione">
+      <h2>Cos'è sbotto.io?</h2>
+      <p>
+        <strong>sbotto.io</strong> è una bacheca digitale P2P (peer-to-peer) dove puoi scrivere post-it,
+        spostarli e condividerli in tempo reale con chiunque sia collegato.  
+        Non c’è un server centrale che controlla tutto: i dati viaggiano direttamente tra i dispositivi
+        degli utenti connessi, in maniera distribuita e autonoma.
+      </p>
+      <p>
+        Ogni volta che qualcuno scrive o muove un post-it da un altro dispositivo, tu lo vedrai subito
+        comparire o spostarsi davanti ai tuoi occhi. È come una lavagna collaborativa sempre viva,
+        senza log-in, senza registrazioni e senza tracce da nessuna parte.
+      </p>
+      <p>
+        È uno spazio libero per comunicare in modo creativo, veloce e diretto.  
+        Scrivi, trascina, osserva e divertiti: <em>lo sbotto è sempre in tempo reale!</em> ⚡
+      </p>
     </div>
 
     <textarea id="noteInput" placeholder="Scrivi qui il tuo post-it (max 40 caratteri)..."></textarea>
@@ -228,28 +267,6 @@ body.dragging{ user-select:none; }
   <!-- Busta di condivisione -->
   <div id="shareZone"></div>
 
-  <!-- Overlay + Box regolamento -->
-  <div id="overlay" onclick="toggleRegolamento()"></div>
-  <div id="regolamentoBox">
-    <div class="close" onclick="toggleRegolamento()">×</div>
-    <h2>📜 Regolamento</h2>
-    <ul>
-      <li>Messaggi brevi, max 40 caratteri</li>
-      <li>Usa colori o comandi speciali</li>
-      <li>No insulti, spam o contenuti illegali</li>
-      <li>I post-it speciali non si cancellano</li>
-    </ul>
-    <h2>🎨 Comandi speciali</h2>
-    <ul>
-      <li><code>#mod</code> → nero ☠️</li>
-      <li><code>#ghost</code> → trasparente 👻</li>
-      <li><code>#madama</code> → lampeggiante 🚨</li>
-      <li><code>#red</code> / <code>#rosso</code> → rosso 🔴</li>
-      <li><code>#lilla</code> → lilla 💜</li>
-      <li><code>#fucsia</code> / <code>#fuxsia</code> → fucsia 💖</li>
-    </ul>
-  </div>
-
   <!-- GUN + html2canvas -->
   <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -266,18 +283,6 @@ body.dragging{ user-select:none; }
   let store = {};
   let drag = null;
 
-  function toggleRegolamento(){
-    const box = document.getElementById("regolamentoBox");
-    const overlay = document.getElementById("overlay");
-    if(box.style.display === "block"){
-      box.style.display = "none";
-      overlay.style.display = "none";
-    } else {
-      box.style.display = "block";
-      overlay.style.display = "block";
-    }
-  }
-
   function pointerMove(e){
     if(!drag) return;
     e.preventDefault();
@@ -292,35 +297,17 @@ body.dragging{ user-select:none; }
     y = Math.max(0, Math.min(y, maxY));
     el.style.left = x + "px";
     el.style.top  = y + "px";
-
-    const shareZone = document.getElementById("shareZone").getBoundingClientRect();
-    if(e.clientX > shareZone.left && e.clientX < shareZone.right &&
-       e.clientY > shareZone.top && e.clientY < shareZone.bottom){
-        document.getElementById("shareZone").classList.add("active");
-        drag.overShare = true;
-    } else {
-        document.getElementById("shareZone").classList.remove("active");
-        drag.overShare = false;
-    }
   }
 
   function pointerUp(){
     if(!drag) return;
-    const { id, el, overShare } = drag;
-    if(overShare){
-      condividiNota(id);
-    } else {
-      const n = store[id];
-      if(n){
-        n.x = parseInt(el.style.left)||0;
-        n.y = parseInt(el.style.top)||0;
-        notesDB.get(id).put({ x:n.x, y:n.y });
-      }
+    const { id, el } = drag;
+    const n = store[id];
+    if(n){
+      n.x = parseInt(el.style.left)||0;
+      n.y = parseInt(el.style.top)||0;
+      notesDB.get(id).put({ x:n.x, y:n.y });
     }
-    // ripristina transizione dopo drag
-    el.style.transition = "left 0.5s ease, top 0.5s ease, transform 0.3s ease, box-shadow .15s";
-
-    document.getElementById("shareZone").classList.remove("active");
     document.body.classList.remove("dragging");
     drag = null;
   }
@@ -359,8 +346,6 @@ body.dragging{ user-select:none; }
           offsetX: e.clientX - elRect.left,
           offsetY: e.clientY - elRect.top
         };
-        // disattiva transizione durante il drag
-        div.style.transition = "none";
         div.style.zIndex = 9999;
         document.body.classList.add("dragging");
         if(div.setPointerCapture) { try{ div.setPointerCapture(e.pointerId);}catch(_){ } }
