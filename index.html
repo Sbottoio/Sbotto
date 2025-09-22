@@ -239,8 +239,16 @@ body.dragging{ user-select:none; }
       div.style.left = (n.x||0) + "px";
       div.style.top  = (n.y||0) + "px";
       div.style.transform = `rotate(${n.rot}deg)`;
+
+      let deleteBtn = "";
+      // niente X per i post-it speciali
+      if(!["black","ghost","madama","red","lilla","fucsia"].includes(n.color)){
+        deleteBtn = `<div class="delete" onclick="event.stopPropagation(); eliminaNota('${n.id}')">×</div>`;
+      }
+
       div.innerHTML = `
-        <div class="delete" onclick="event.stopPropagation(); eliminaNota('${n.id}')">×</div>
+        ${deleteBtn}
+        ${n.moderator ? '<div style="position:absolute;top:5px;left:5px;font-size:20px;">☠️</div>' : ''}
         <div class="text">${n.text}</div>
         <small>${new Date(n.date).toLocaleString()}</small>
       `;
