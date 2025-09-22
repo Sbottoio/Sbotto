@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Bacheca Post-it P2P con Busta</title>
+<title>sbotto.io - Bacheca P2P</title>
 <style>
 body{
   font-family:"Arial Rounded MT Bold", Arial, sans-serif;
@@ -42,13 +42,14 @@ h1{margin-bottom:10px;}
   position: fixed;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  max-width: 500px;
+  max-width: 600px;
   background: #fff;
   padding: 20px;
   border-radius: 10px;
   box-shadow: 0 0 20px rgba(0,0,0,0.3);
   z-index: 3000;
   text-align: left;
+  line-height: 1.5;
 }
 #regolamentoBox h2 {
   margin-top: 0;
@@ -232,21 +233,35 @@ body.dragging{ user-select:none; }
   <div id="overlay" onclick="toggleRegolamento()"></div>
   <div id="regolamentoBox">
     <div class="close" onclick="toggleRegolamento()">×</div>
-    <h2>📜 Regolamento</h2>
+    <h2>👋 Benvenuto su sbotto.io</h2>
+    <p>
+      sbotto.io è una bacheca digitale di post-it anonimi e collaborativi.<br>
+      Qui puoi scrivere, ridere, sfogarti o lanciare idee al volo con messaggi brevi (max 40 caratteri).<br>
+      Niente login, niente iscrizioni: solo post-it condivisi in tempo reale.
+    </p>
+    <hr>
+    <h2>✨ Cos’è il P2P</h2>
+    <p>
+      sbotto.io funziona in P2P (peer to peer).<br>
+      Vuol dire che i messaggi non passano da un server centrale, ma vengono condivisi direttamente tra i browser degli utenti che sono online.
+    </p>
+    <p>
+      Immagina una piazza: ognuno attacca il suo post-it sul muro e tutti gli altri lo vedono subito.<br>
+      Non c’è un “capo” o un server che raccoglie dati:
+      <ul>
+        <li>i messaggi viaggiano da persona a persona</li>
+        <li>restano visibili finché ci sono utenti connessi</li>
+        <li>è un sistema decentralizzato, libero e comunitario</li>
+      </ul>
+    </p>
+    <hr>
+    <h2>📜 Regole del gioco</h2>
     <ul>
-      <li>Messaggi brevi, max 40 caratteri</li>
-      <li>Usa colori o comandi speciali</li>
-      <li>No insulti, spam o contenuti illegali</li>
-      <li>I post-it speciali non si cancellano</li>
-    </ul>
-    <h2>🎨 Comandi speciali</h2>
-    <ul>
-      <li><code>#mod</code> → nero ☠️</li>
-      <li><code>#ghost</code> → trasparente 👻</li>
-      <li><code>#madama</code> → lampeggiante 🚨</li>
-      <li><code>#red</code> / <code>#rosso</code> → rosso 🔴</li>
-      <li><code>#lilla</code> → lilla 💜</li>
-      <li><code>#fucsia</code> / <code>#fuxsia</code> → fucsia 💖</li>
+      <li>✍️ Messaggi brevi, massimo 40 caratteri.</li>
+      <li>🎨 Scegli un colore dal menu.</li>
+      <li>🚫 No insulti, spam o contenuti illegali.</li>
+      <li>👻 Alcuni post-it speciali non si possono cancellare.</li>
+      <li>🤝 Rispetta gli altri e divertiti: sbotto.io è uno spazio libero e creativo.</li>
     </ul>
   </div>
 
@@ -317,9 +332,7 @@ body.dragging{ user-select:none; }
         notesDB.get(id).put({ x:n.x, y:n.y });
       }
     }
-    // ripristina transizione dopo drag
     el.style.transition = "left 0.5s ease, top 0.5s ease, transform 0.3s ease, box-shadow .15s";
-
     document.getElementById("shareZone").classList.remove("active");
     document.body.classList.remove("dragging");
     drag = null;
@@ -347,7 +360,6 @@ body.dragging{ user-select:none; }
 
       div.innerHTML = `
         ${deleteBtn}
-        ${n.moderator ? '<div style="position:absolute;top:5px;left:5px;font-size:20px;">☠️</div>' : ''}
         <div class="text">${n.text}</div>
         <small>${new Date(n.date).toLocaleString()}</small>
       `;
@@ -359,7 +371,6 @@ body.dragging{ user-select:none; }
           offsetX: e.clientX - elRect.left,
           offsetY: e.clientY - elRect.top
         };
-        // disattiva transizione durante il drag
         div.style.transition = "none";
         div.style.zIndex = 9999;
         document.body.classList.add("dragging");
