@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>sbotto.io - Bacheca P2P</title>
+<title>sbotto.io - Bacheca</title>
 <style>
 body{
   font-family:"Arial Rounded MT Bold", Arial, sans-serif;
@@ -36,7 +36,7 @@ h1{margin-bottom:10px;}
   font-size: 18px;
 }
 
-/* Popup regolamento */
+/* Popup info/regole */
 #regolamentoBox {
   display: none;
   position: fixed;
@@ -51,9 +51,7 @@ h1{margin-bottom:10px;}
   text-align: left;
   line-height: 1.5;
 }
-#regolamentoBox h2 {
-  margin-top: 0;
-}
+#regolamentoBox h2 { margin-top: 0; }
 #regolamentoBox .close {
   position: absolute;
   top: 10px; right: 15px;
@@ -142,12 +140,10 @@ body.dragging{ user-select:none; }
 .orange{background:linear-gradient(135deg,#ffcc80,#fb8c00);}
 .black {background:linear-gradient(135deg,#000,#333); color:#fff;}
 
-/* Personalizzati solo da # */
+/* Personalizzati da # (restano nascosti all'utente) */
 .red    {background:linear-gradient(135deg,#ff8a80,#e53935); color:#fff;}
 .lilla  {background:linear-gradient(135deg,#ce93d8,#8e24aa); color:#fff;}
 .fucsia,.fuxsia {background:linear-gradient(135deg,#f06292,#ad1457); color:#fff;}
-
-/* Ghost (trasparente) */
 .ghost {
   background: rgba(255, 255, 255, 0.05);
   color: rgba(0,0,0,0.3);
@@ -155,8 +151,6 @@ body.dragging{ user-select:none; }
   backdrop-filter: blur(2px);
   box-shadow: none;
 }
-
-/* Madama lampeggiante */
 .madama {
   background:linear-gradient(135deg,#ff1744,#b71c1c);
   color:#fff;
@@ -179,19 +173,16 @@ body.dragging{ user-select:none; }
   transition: transform 0.2s, opacity 0.2s;
   z-index: 2000;
 }
-#shareZone.active {
-  opacity: 1;
-  transform: scale(1.1);
-}
+#shareZone.active { opacity: 1; transform: scale(1.1); }
 </style>
 </head>
 <body>
   <div class="container">
-    <h1>📌 Sbotto un Post-it </h1>
+    <h1>📌 Sbotto un Post-it</h1>
 
     <!-- Box introduttivo breve -->
     <div class="intro">
-       ⚡ Se pensi di muovere un post-it di nascosto… buona fortuna 👀
+      ⚡ Se pensi di muovere un post-it di nascosto… buona fortuna 👀
       <span class="info-icon" onclick="toggleRegolamento()">ℹ️</span>
     </div>
 
@@ -220,7 +211,7 @@ body.dragging{ user-select:none; }
         </select>
       </div>
     </div>
-   
+
     <button onclick="aggiungiNota()">Pubblica Post-it</button>
     <div id="board"></div>
   </div>
@@ -228,7 +219,7 @@ body.dragging{ user-select:none; }
   <!-- Busta di condivisione -->
   <div id="shareZone"></div>
 
-  <!-- Overlay + Box regolamento -->
+  <!-- Overlay + Box info -->
   <div id="overlay" onclick="toggleRegolamento()"></div>
   <div id="regolamentoBox">
     <div class="close" onclick="toggleRegolamento()">×</div>
@@ -238,9 +229,9 @@ body.dragging{ user-select:none; }
       Sfogati o lancia idee in tempo reale.
     </p>
     <hr>
-    <h2>✨ In Diretta </h2>
+    <h2>✨ In Diretta</h2>
     <p>
-      Ogni post-it che compare qui è stato scritto da qualcuno, da qualche parte, nello stesso momento.<br>
+      Ogni post-it che compare qui è stato scritto da qualcuno, da qualche parte, nello stesso momento.
     </p>
     <hr>
     <h2>📜 Regole</h2>
@@ -257,6 +248,7 @@ body.dragging{ user-select:none; }
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
   <script>
+  /* ====== GUN + CACHE LOCALE ====== */
   const gun = Gun({
     peers:[
       "https://gun.database.eco/gun",
@@ -268,6 +260,30 @@ body.dragging{ user-select:none; }
   let store = {};
   let drag = null;
 
+  const CACHE_KEY = "sbotto-notes";
+
+  function salvaCache(){
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(store)); }
+    catch(e){ console.warn("Cache non salvata", e); }
+  }
+  function caricaCache(){
+    try {
+      const dati = JSON.parse(localStorage.getItem(CACHE_KEY) || "{}");
+      if (dati && typeof dati === "object") {
+        store = dati;
+        render();
+      }
+    } catch(e){ console.warn("Errore cache", e); }
+  }
+  function ripropaga(){
+    Object.values(store).forEach(n=>{
+      if(n && n.id && !n.deleted){
+        notesDB.get(n.id).put(n);
+      }
+    });
+  }
+
+  /* ====== UI / POPUP ====== */
   function toggleRegolamento(){
     const box = document.getElementById("regolamentoBox");
     const overlay = document.getElementById("overlay");
@@ -280,6 +296,7 @@ body.dragging{ user-select:none; }
     }
   }
 
+  /* ====== DRAG ====== */
   function pointerMove(e){
     if(!drag) return;
     e.preventDefault();
@@ -295,14 +312,13 @@ body.dragging{ user-select:none; }
     el.style.left = x + "px";
     el.style.top  = y + "px";
 
-    const shareZone = document.getElementById("shareZone").getBoundingClientRect();
-    if(e.clientX > shareZone.left && e.clientX < shareZone.right &&
-       e.clientY > shareZone.top && e.clientY < shareZone.bottom){
-        document.getElementById("shareZone").classList.add("active");
-        drag.overShare = true;
+    const sz = document.getElementById("shareZone").getBoundingClientRect();
+    if(e.clientX > sz.left && e.clientX < sz.right && e.clientY > sz.top && e.clientY < sz.bottom){
+      document.getElementById("shareZone").classList.add("active");
+      drag.overShare = true;
     } else {
-        document.getElementById("shareZone").classList.remove("active");
-        drag.overShare = false;
+      document.getElementById("shareZone").classList.remove("active");
+      drag.overShare = false;
     }
   }
 
@@ -327,22 +343,23 @@ body.dragging{ user-select:none; }
   document.addEventListener("pointermove", pointerMove, {passive:false});
   document.addEventListener("pointerup", pointerUp);
 
+  /* ====== RENDER ====== */
   function render(){
     const board = document.getElementById("board");
     board.innerHTML="";
     Object.values(store).forEach(n=>{
       if(!n || n.deleted) return;
       const div = document.createElement("div");
-      div.id = "note_"+n.id;
-      div.className = `note ${n.color}`;
-      div.style.color = n.textColor;
+      div.id = "note_" + n.id;
+      div.className = "note " + (n.color || "yellow");
+      div.style.color = n.textColor || "#000";
       div.style.left = (n.x||0) + "px";
       div.style.top  = (n.y||0) + "px";
-      div.style.transform = `rotate(${n.rot}deg)`;
+      div.style.transform = "rotate(" + (n.rot||0) + "deg)";
 
       let deleteBtn = "";
       if(!["black","ghost","madama","red","lilla","fucsia"].includes(n.color)){
-        deleteBtn = `<div class="delete" onclick="event.stopPropagation(); eliminaNota('${n.id}')">×</div>`;
+        deleteBtn = '<div class="delete" onclick="event.stopPropagation(); eliminaNota(\''+n.id+'\')">×</div>';
       }
 
       div.innerHTML = `
@@ -350,6 +367,7 @@ body.dragging{ user-select:none; }
         <div class="text">${n.text}</div>
         <small>${new Date(n.date).toLocaleString()}</small>
       `;
+
       div.addEventListener("pointerdown",(e)=>{
         if(e.target.classList.contains("delete")) return;
         const elRect = div.getBoundingClientRect();
@@ -364,10 +382,12 @@ body.dragging{ user-select:none; }
         if(div.setPointerCapture) { try{ div.setPointerCapture(e.pointerId);}catch(_){ } }
         e.preventDefault();
       });
+
       board.appendChild(div);
     });
   }
 
+  /* ====== HASHTAG SEGRETI ====== */
   function parseSpecial(input){
     const m = input.match(/^\s*#([a-zàèéìòóù]+)\b/i);
     if(!m) return null;
@@ -395,6 +415,7 @@ body.dragging{ user-select:none; }
     return null;
   }
 
+  /* ====== AZIONI ====== */
   function aggiungiNota(){
     let text = document.getElementById("noteInput").value.trim();
     if(!text) return alert("Scrivi qualcosa!");
@@ -447,11 +468,21 @@ body.dragging{ user-select:none; }
     });
   }
 
+  /* ====== SYNC P2P + CACHE ====== */
   notesDB.map().on((n,id)=>{
-    if(!n || !n.id || n.deleted){ delete store[id]; }
-    else { store[id]=Object.assign(store[id]||{}, n); }
+    if(!n || !n.id || n.deleted){
+      delete store[id];
+    } else {
+      store[id] = Object.assign(store[id]||{}, n);
+    }
+    salvaCache();
     render();
   });
+
+  // 1) carica subito dalla cache per evitare bacheca vuota
+  caricaCache();
+  // 2) dopo 2s ripropaga ai peer quello che hai in cache
+  setTimeout(ripropaga, 2000);
   </script>
 </body>
 </html>
