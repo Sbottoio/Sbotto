@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>sbotto.io - Bacheca P2P</title>
+<title>sbotto.io - Bacheca P2P (per sempre)</title>
 <style>
 body{
   font-family:"Arial Rounded MT Bold", Arial, sans-serif;
@@ -104,12 +104,7 @@ body.dragging{ user-select:none; }
 }
 .note small{ font-size:10px; color:#444; margin-top:5px; }
 
-/* icona elimina */
-.note .delete{
-  position:absolute; top:6px; right:8px; cursor:pointer;
-  font-weight:bold; font-size:14px; display:none;
-}
-.note:hover .delete{ display:block; }
+/* (RIMOSSA) icona elimina */
 
 /* Pin rosso */
 .note::before{
@@ -243,18 +238,29 @@ body.dragging{ user-select:none; }
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
   <script>
+  // ========= PERSISTENZA "PER SEMPRE" =========
   const gun = Gun({
     peers:[
       "https://gun.database.eco/gun",
       "https://peer.wallie.io/gun",
       "https://gun-altcoins.herokuapp.com/gun"
-    ]
+    ],
+    // persistenza locale
+    localStorage: true,
+    radisk: true,
+    uuid: () => Gun.text.random(16)
   });
   const notesDB = gun.get("p2p-postit");
   const counterDB = gun.get("p2p-postit-counter"); // contatore globale
+
+  // store in RAM
   let store = {};
   let drag = null;
   let totalCounter = 0;
+
+  // chiavi backup locale
+  const LS_BACKUP_KEY = "p2p-postit-backup-v1";
+  const LS_BACKUP_COUNTER_KEY = "p2p-postit-counter-backup-v1";
 
   // Toggle regolamento
   function toggleRegolamento(){
@@ -317,7 +323,11 @@ body.dragging{ user-select:none; }
     const board = document.getElementById("board");
     board.innerHTML="";
     Object.values(store).forEach(n=>{
-      if(!n || n.deleted) return;
+      if(!n) return;
+
+      // **PER SEMPRE**: ignora eventuali flag di cancellazione remoti
+      // if(n.deleted) return;  // <- NON lo facciamo più
+
       const div = document.createElement("div");
       div.id = "note_"+n.id;
       div.className = `note ${n.color}`;
@@ -326,18 +336,13 @@ body.dragging{ user-select:none; }
       div.style.top  = (n.y||0) + "px";
       div.style.transform = `rotate(${n.rot}deg)`;
 
-      let deleteBtn = "";
-      if(!["black","ghost","madama","red","lilla","fucsia"].includes(n.color)){
-        deleteBtn = `<div class="delete" onclick="event.stopPropagation(); eliminaNota('${n.id}')">×</div>`;
-      }
-
+      // rimosso pulsante elimina per rendere i post-it permanenti
       div.innerHTML = `
-        ${deleteBtn}
         <div class="text">${n.text}</div>
         <small>${new Date(n.date).toLocaleString()}</small>
       `;
+
       div.addEventListener("pointerdown",(e)=>{
-        if(e.target.classList.contains("delete")) return;
         const elRect = div.getBoundingClientRect();
         drag = { id: n.id, el: div,
           offsetX: e.clientX - elRect.left,
@@ -393,22 +398,30 @@ body.dragging{ user-select:none; }
       note.textColor = document.getElementById("textColorSelect").value;
     }
 
+    // scrivi su GUN
     notesDB.get(note.id).put(note);
 
-    // incrementa contatore globale
+    // incrementa contatore globale (senza decrementi)
     counterDB.get("total").once(val=>{
-      const current = val || 0;
+      const current = (typeof val === 'number' ? val : 0);
       counterDB.get("total").put(current + 1);
+      // aggiorna backup subito
+      try { localStorage.setItem(LS_BACKUP_COUNTER_KEY, String(current + 1)); } catch(e){}
     });
+
+    // backup veloce locale
+    try {
+      const snapshot = JSON.parse(localStorage.getItem(LS_BACKUP_KEY) || "[]");
+      snapshot.push(note);
+      // per 5000 note: rimaniamo entro limiti; se supera quota, il catch evita errori
+      localStorage.setItem(LS_BACKUP_KEY, JSON.stringify(snapshot));
+    } catch(e){ /* quota piena, ignoriamo: Radisk mantiene comunque */ }
 
     document.getElementById("noteInput").value="";
   }
 
-  // Elimina nota
-  function eliminaNota(id){
-    if(!confirm("Vuoi eliminare questo post-it?")) return;
-    notesDB.get(id).put({deleted:true});
-  }
+  // (RIMOSSA) Elimina nota: disabilitata per "per sempre"
+  // function eliminaNota(id){}
 
   // Condividi nota
   function condividiNota(id){
@@ -429,18 +442,74 @@ body.dragging{ user-select:none; }
     });
   }
 
-  // Ascolta database
+  // ======== CARICAMENTO INIZIALE PERSISTENTE ========
+  let initialLoadDone = false;
+
+  // 1) Recupera TUTTE le note già salvate una volta (persistenza)
+  notesDB.map().once((n,id)=>{
+    if(n && n.id){
+      // Ignora cancellazioni remote
+      if(n.deleted) { n.deleted = false; }
+      store[id]=Object.assign(store[id]||{}, n);
+    }
+  });
+
+  // 2) Ascolta cambi live
   notesDB.map().on((n,id)=>{
-    if(!n || !n.id || n.deleted){ delete store[id]; }
-    else { store[id]=Object.assign(store[id]||{}, n); }
+    if(n && n.id){
+      if(n.deleted){ /* ignoriamo */ return; }
+      store[id]=Object.assign(store[id]||{}, n);
+    }
     render();
   });
 
-  // Ascolta contatore globale
+  // 3) Fallback: se entro 2s non abbiamo niente, ripristina da backup locale
+  setTimeout(()=>{
+    if(Object.keys(store).length === 0){
+      try{
+        const backup = JSON.parse(localStorage.getItem(LS_BACKUP_KEY) || "[]");
+        if(Array.isArray(backup) && backup.length){
+          backup.forEach(n => {
+            store[n.id] = n;
+            // rimettiamo anche su GUN se mancasse
+            notesDB.get(n.id).put(n);
+          });
+        }
+      }catch(e){}
+      render();
+    }
+    initialLoadDone = true;
+  }, 2000);
+
+  // Contatore globale (con backup)
   counterDB.get("total").on(val=>{
-    totalCounter = val || 0;
+    totalCounter = (typeof val === 'number' ? val : 0);
+    if(!val){
+      // prova ripristino da backup locale
+      const b = parseInt(localStorage.getItem(LS_BACKUP_COUNTER_KEY)||"0",10);
+      if(b>0){ totalCounter=b; counterDB.get("total").put(b); }
+    }
     document.getElementById("counterBox").textContent = "📝 Totale post-it: " + totalCounter;
   });
+
+  // Backup periodico locale (ogni 60s)
+  setInterval(()=>{
+    try {
+      const arr = Object.values(store);
+      localStorage.setItem(LS_BACKUP_KEY, JSON.stringify(arr));
+      localStorage.setItem(LS_BACKUP_COUNTER_KEY, String(totalCounter||0));
+    } catch(e){ /* ignoriamo quote error */ }
+  }, 60000);
+
+  // Backup alla chiusura pagina
+  window.addEventListener('beforeunload', ()=>{
+    try {
+      const arr = Object.values(store);
+      localStorage.setItem(LS_BACKUP_KEY, JSON.stringify(arr));
+      localStorage.setItem(LS_BACKUP_COUNTER_KEY, String(totalCounter||0));
+    } catch(e){}
+  });
+
   </script>
 </body>
 </html>
