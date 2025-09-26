@@ -3,292 +3,428 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Bacheca Post-it P2P con Busta</title>
-<style>
-body{
-  font-family:"Arial Rounded MT Bold", Arial, sans-serif;
-  background:#f3efe6; margin:0; padding:20px;
-}
-.container{max-width:1200px; margin:auto; text-align:center;}
-h1{margin-bottom:20px;}
+<title>sbotto.io — Bacheca P2P 2.0</title>
 
-textarea{
-  width:100%; height:80px; padding:10px; border-radius:5px;
-  border:1px solid #ccc; resize:none; font-size:14px;
+<style>
+:root{
+  --bg: #0f1222;
+  --panel: rgba(255,255,255,0.06);
+  --panel-border: rgba(255,255,255,0.12);
+  --text: #e9ecff;
+  --muted:#a9b1d6;
+  --accent:#7c9bff;
+  --ok:#38d39f;
+  --warn:#ffb347;
+  --bad:#ff6868;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; padding:24px;
+  font-family: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color:var(--text); background:
+  radial-gradient(1200px 700px at 10% -10%, #1b1f3b 0%, transparent 60%),
+  radial-gradient(900px 600px at 100% 0%, #1a2b5b 0%, transparent 55%),
+  linear-gradient(180deg, #0b0e1a 0%, #0f1222 60%, #0f1222 100%);
+}
+
+/* container */
+.app{max-width:1200px; margin:0 auto;}
+.header{
+  display:flex; gap:16px; align-items:center; justify-content:space-between; flex-wrap:wrap;
+  margin-bottom:14px;
+}
+.brand{
+  display:flex; align-items:center; gap:12px;
+}
+.brand .logo{
+  width:40px;height:40px; border-radius:12px;
+  background: linear-gradient(135deg,#7c9bff,#9be7ff);
+  box-shadow: 0 12px 25px rgba(124,155,255,.25), inset 0 1px 10px rgba(255,255,255,.35);
+}
+.brand h1{margin:0; font-size:22px; letter-spacing:.4px}
+
+.status{
+  display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+}
+.badge{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:8px 12px; border-radius:12px;
+  background:var(--panel); border:1px solid var(--panel-border);
+  box-shadow: 0 6px 18px rgba(0,0,0,.25);
+  font-weight:600; color:var(--muted);
+}
+.dot{width:8px;height:8px;border-radius:50%;}
+.dot.ok{background:var(--ok)}
+.dot.warn{background:var(--warn)}
+.dot.bad{background:var(--bad)}
+.small{font-size:12px; opacity:.9}
+
+/* composer card */
+.card{
+  background:var(--panel); border:1px solid var(--panel-border);
+  border-radius:16px; padding:12px; backdrop-filter: blur(12px);
+  box-shadow: 0 10px 30px rgba(0,0,0,.35), inset 0 1px 1px rgba(255,255,255,.08);
+}
+.composer{
+  display:grid; grid-template-columns: 1fr auto; gap:12px; align-items:center;
 }
 .controls{
-  margin:10px 0; display:flex; flex-wrap:wrap;
-  justify-content:center; gap:15px;
+  display:flex; flex-wrap:wrap; gap:10px; align-items:center;
 }
-.controls label{font-weight:bold; margin-right:5px;}
-button{
-  margin-top:10px; padding:10px 20px; border:none; border-radius:5px;
-  background:#ff7043; color:#fff; cursor:pointer; font-weight:bold;
+select, input[type="file"]{
+  background:#0c1022; color:var(--text);
+  border:1px solid #2a3155; border-radius:10px; padding:8px 10px; font-weight:600;
 }
-button:hover{background:#f4511e;}
+textarea{
+  width:100%; min-height:66px; resize:vertical;
+  background:#0c1022; color:var(--text);
+  border:1px solid #2a3155; border-radius:12px; padding:12px; outline:none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+}
+.btn{
+  border:none; border-radius:12px; padding:10px 16px; font-weight:800; cursor:pointer;
+  color:#0b0e1a; background:linear-gradient(135deg,#9be7ff,#7c9bff);
+  box-shadow: 0 8px 18px rgba(124,155,255,.35), inset 0 1px 0 rgba(255,255,255,.6);
+  transition: transform .06s ease;
+}
+.btn:active{ transform: translateY(1px); }
 
-#board{
-  position:relative; width:100%; min-height:800px;
-  background:#fafafa; border:2px dashed #ccc; overflow:hidden;
+/* board */
+.board{
+  position:relative; min-height:72vh; margin-top:16px; padding:14px;
+  display:grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap:18px;
 }
 
-/* Post-it */
+/* sticky notes 2.0 */
 .note{
-  width:130px; height:130px;
-  padding:14px 10px 10px 10px;
-  border-radius:2px;
-  position:absolute; overflow:hidden;
-  cursor:grab;
-  display:flex; flex-direction:column; justify-content:flex-start; align-items:center;
-  box-shadow:-3px 3px 6px rgba(0,0,0,.25), inset 0 0 30px rgba(255,255,255,.3);
-  transition: box-shadow .15s;
-  touch-action:none;
+  position:relative; height:200px; padding:10px 10px 12px 10px; border-radius:14px;
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+  transform: rotate(var(--r, -1.2deg));
+  box-shadow: -6px 10px 20px rgba(0,0,0,.35), inset 0 12px 30px rgba(255,255,255,.12);
+  transition: box-shadow .15s ease, transform .15s ease;
+  cursor:grab; user-select:none;
+  border: 1px solid rgba(0,0,0,.15);
 }
-.note:active{cursor:grabbing;}
-.note:hover{ box-shadow:-4px 4px 8px rgba(0,0,0,.35); }
-body.dragging{ user-select:none; }
-
-/* Angolo sollevato */
-.note::after{
-  content:""; position:absolute; right:0; bottom:0; width:40px; height:40px;
+.note:hover{ box-shadow: -8px 14px 26px rgba(0,0,0,.45); transform: rotate(var(--r, -1.2deg)) translateY(-2px); }
+.note:active{ cursor:grabbing; }
+.pin{
+  position:absolute; top:6px; left:calc(50% - 8px); width:16px; height:16px; border-radius:50%;
+  background: radial-gradient(circle at 30% 30%, #ff7070, #c62828);
+  box-shadow:0 3px 8px rgba(0,0,0,.45);
+}
+.corner{
+  content:""; position:absolute; right:0; bottom:0; width:48px; height:48px;
   background:linear-gradient(135deg, rgba(0,0,0,.25), transparent 70%);
-  clip-path:polygon(100% 0, 0 100%, 100% 100%); pointer-events:none;
+  clip-path:polygon(100% 0, 0 100%, 100% 100%); pointer-events:none; opacity:.7;
 }
 
-/* contenuti */
-.note .text{
-  font-size:13px; font-weight:bold; line-height:1.3; text-align:center; word-wrap:break-word;
-  margin-top:14px;
+.note .img{
+  max-width:110px; max-height:110px; border-radius:10px; margin-top:22px;
+  box-shadow: 0 6px 12px rgba(0,0,0,.25);
 }
-.note small{ font-size:10px; color:#444; margin-top:5px; }
+.note .imgkb{ font-size:11px; color:rgba(0,0,0,.6); margin-top:4px; font-weight:700; }
+.note .txt{ margin:8px 4px 0; text-align:center; font-weight:800; line-height:1.2; }
+.note .date{ margin-top:auto; font-size:11px; opacity:.8; font-weight:700; }
 
-/* icona elimina */
-.note .delete{
-  position:absolute; top:6px; right:8px; cursor:pointer;
-  font-weight:bold; font-size:14px; display:none;
+.note .del{
+  position:absolute; top:6px; right:8px; font-weight:900; font-size:16px;
+  background: rgba(255,255,255,.4); color:#000; border-radius:8px; padding:0 6px; display:none;
 }
-.note:hover .delete{ display:block; }
+.note:hover .del{ display:block; }
 
-/* Pin rosso */
-.note::before{
-  content:""; width:12px; height:12px;
-  background:radial-gradient(circle at 30% 30%, #ff5252, #c62828);
-  border-radius:50%; position:absolute; top:6px; left:calc(50% - 6px);
-  box-shadow:0 2px 5px rgba(0,0,0,.3);
+/* palettes */
+.yellow{ background:linear-gradient(180deg,#fff59d,#fcd34d); color:#111; }
+.blue  { background:linear-gradient(180deg,#93c5fd,#60a5fa); color:#0a1228; }
+.green { background:linear-gradient(180deg,#86efac,#4ade80); color:#062013; }
+.pink  { background:linear-gradient(180deg,#f9a8d4,#f472b6); color:#2a0d1f; }
+.orange{ background:linear-gradient(180deg,#fed7aa,#fb923c); color:#211509; }
+.black { background:linear-gradient(180deg,#1f2937,#111827); color:#e5e7eb; }
+
+.red    { background:linear-gradient(180deg,#ff8a80,#e53935); color:#fff; }
+.lilla  { background:linear-gradient(180deg,#d8b4fe,#a78bfa); color:#250a3a; }
+.fucsia { background:linear-gradient(180deg,#f472b6,#db2777); color:#fff; }
+.ghost  {
+  background: rgba(255,255,255,0.08) !important; color: rgba(255,255,255,.7);
+  border: 1px dashed rgba(255,255,255,.25) !important; box-shadow:none;
 }
 
-/* Colori */
-.yellow{background:linear-gradient(135deg,#fff59d,#fdd835);}
-.blue  {background:linear-gradient(135deg,#90caf9,#42a5f5);}
-.green {background:linear-gradient(135deg,#a5d6a7,#66bb6a);}
-.pink  {background:linear-gradient(135deg,#f48fb1,#ec407a);}
-.orange{background:linear-gradient(135deg,#ffcc80,#fb8c00);}
-.black {background:linear-gradient(135deg,#000,#333); color:#fff;}
-
-/* Zona busta */
-#shareZone {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 80px;
-  height: 60px;
-  background: url('https://upload.wikimedia.org/wikipedia/commons/4/4e/Envelope_font_awesome.svg') no-repeat center/contain;
-  opacity: 0.6;
-  transition: transform 0.2s, opacity 0.2s;
-  z-index: 2000;
+/* footer info */
+.helper{
+  margin-top:10px; color:var(--muted); font-size:12px; text-align:center;
+  opacity:.85;
 }
-#shareZone.active {
-  opacity: 1;
-  transform: scale(1.1);
-}
+a { color: var(--accent); }
 </style>
 </head>
 <body>
-  <div class="container">
-    <h1>📌 Bacheca Post-it P2P</h1>
-    <textarea id="noteInput" placeholder="Scrivi qui il tuo post-it (max 40 caratteri)..."></textarea>
-
-    <div class="controls">
-      <div>
-        <label>Colore Post-it:</label>
-        <select id="colorSelect">
-          <option value="yellow">Giallo</option>
-          <option value="blue">Blu</option>
-          <option value="green">Verde</option>
-          <option value="pink">Rosa</option>
-          <option value="orange">Arancione</option>
-        </select>
-      </div>
-      <div>
-        <label>Colore Testo:</label>
-        <select id="textColorSelect">
-          <option value="#000000">Nero</option>
-          <option value="#1e88e5">Blu</option>
-          <option value="#d32f2f">Rosso</option>
-          <option value="#388e3c">Verde</option>
-          <option value="#8e24aa">Viola</option>
-        </select>
-      </div>
+<div class="app">
+  <div class="header">
+    <div class="brand">
+      <div class="logo"></div>
+      <h1>📌 sbotto.io — Bacheca P2P 2.0</h1>
     </div>
-   
-    <button onclick="aggiungiNota()">Pubblica Post-it</button>
-    <div id="board"></div>
+    <div class="status">
+      <div class="badge" id="netStatus"><span class="dot warn" id="netDot"></span><span id="netText">Connessione…</span></div>
+      <div class="badge small">Peer: <span id="peerName">auto</span></div>
+      <div class="badge small">Post-it: <span id="postCount">0</span></div>
+    </div>
   </div>
 
-  <!-- Busta di condivisione -->
-  <div id="shareZone"></div>
+  <div class="card composer">
+    <textarea id="noteInput" maxlength="70" placeholder="Scrivi qui (max 70 caratteri)…"></textarea>
+    <div class="controls">
+      <select id="colorSelect" title="Colore">
+        <option value="yellow">Giallo</option>
+        <option value="blue">Blu</option>
+        <option value="green">Verde</option>
+        <option value="pink">Rosa</option>
+        <option value="orange">Arancione</option>
+      </select>
+      <select id="textColorSelect" title="Colore testo">
+        <option value="#111111">Nero</option>
+        <option value="#1e3a8a">Blu scuro</option>
+        <option value="#b91c1c">Rosso</option>
+        <option value="#065f46">Verde</option>
+        <option value="#6d28d9">Viola</option>
+        <option value="#ffffff">Bianco</option>
+      </select>
+      <input type="file" id="imageInput" accept="image/*" title="Sticker fotografico (locale)"/>
+      <button class="btn" id="publishBtn">Pubblica</button>
+    </div>
+  </div>
 
-  <!-- GUN + html2canvas -->
-  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <div class="board" id="board"></div>
+  <div class="helper">
+    🧠 Immagini: compresse localmente (WebP 150px) e conservate **solo sul dispositivo** per massima stabilità.  
+    Testo+data sono P2P e si sincronizzano tra browser. — <a href="#" id="clearLocal">svuota immagini locali</a>
+  </div>
+</div>
 
-  <script>
-  const gun = Gun({
-    peers:[
-      "https://gun.database.eco/gun",
-      "https://peer.wallie.io/gun",
-      "https://gun-altcoins.herokuapp.com/gun"
-    ]
+<!-- libs -->
+<script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+
+<script>
+/* ===========================
+   CONFIG P2P + RESILIENZA
+=========================== */
+const peers = [
+  "https://gun.database.eco/gun",
+  "https://relay.peer.gun.eco/gun" // fallback affidabile
+];
+
+const gun = Gun({ peers });
+const notesDB = gun.get("p2p-postit");
+const counterDB = gun.get("p2p-postit-counter");
+
+// stato app
+let store = {};            // note dal grafo (solo campi leggeri)
+let imagesMap = {};        // id -> { dataUrl, kb } SOLO locale
+let drag = null;
+
+/* Persistent Storage (aiuta Safari/iOS) */
+if (navigator.storage && navigator.storage.persist) {
+  navigator.storage.persist().then(granted=>{
+    console.log(granted ? "✅ Storage persistente attivo" : "ℹ️ Storage non garantito");
   });
-  const notesDB = gun.get("p2p-postit");
-  let store = {};
-  let drag = null;
+}
 
-  function pointerMove(e){
-    if(!drag) return;
-    e.preventDefault();
-    const board = document.getElementById("board");
-    const b = board.getBoundingClientRect();
-    const el = drag.el;
-    let x = e.clientX - b.left - drag.offsetX;
-    let y = e.clientY - b.top  - drag.offsetY;
-    const maxX = board.clientWidth  - el.offsetWidth;
-    const maxY = board.clientHeight - el.offsetHeight;
-    x = Math.max(0, Math.min(x, maxX));
-    y = Math.max(0, Math.min(y, maxY));
-    el.style.left = x + "px";
-    el.style.top  = y + "px";
+/* Backup locale note testuali (resilienza) */
+function backupNotesLocally(){
+  try{ localStorage.setItem("postit_backup", JSON.stringify(store)); }catch(_){}
+}
+function restoreBackupIfEmpty(){
+  if(Object.keys(store).length) return;
+  try{
+    const b = JSON.parse(localStorage.getItem("postit_backup")||"{}");
+    if(b && Object.keys(b).length){ store = b; render(); }
+  }catch(_){}
+}
 
-    // controllo busta
-    const shareZone = document.getElementById("shareZone").getBoundingClientRect();
-    if(e.clientX > shareZone.left && e.clientX < shareZone.right &&
-       e.clientY > shareZone.top && e.clientY < shareZone.bottom){
-        document.getElementById("shareZone").classList.add("active");
-        drag.overShare = true;
-    } else {
-        document.getElementById("shareZone").classList.remove("active");
-        drag.overShare = false;
-    }
-  }
+/* immagini locali */
+function loadImages(){ try{ imagesMap = JSON.parse(localStorage.getItem("postit_images")||"{}"); }catch(_){ imagesMap = {}; } }
+function saveImages(){ try{ localStorage.setItem("postit_images", JSON.stringify(imagesMap)); }catch(e){ alert("Memoria locale piena/bloccata: l'immagine non sarà salvata."); } }
+function bytesFromDataURL(u){ const b64=(u||"").split(',')[1]||""; const pad=b64.endsWith("==")?2:(b64.endsWith("=")?1:0); return Math.max(0, Math.floor(b64.length*3/4)-pad); }
 
-   function pointerUp(){
-    if(!drag) return;
-    const { id, el, overShare } = drag;
-    if(overShare){
-      condividiNota(id);
-    } else {
-      const n = store[id];
-      if(n){
-        n.x = parseInt(el.style.left)||0;
-        n.y = parseInt(el.style.top)||0;
-        notesDB.get(id).put({ x:n.x, y:n.y });
-      }
-    }
-    document.getElementById("shareZone").classList.remove("active");
-    document.body.classList.remove("dragging");
-    drag = null;
-  }
-  document.addEventListener("pointermove", pointerMove, {passive:false});
-  document.addEventListener("pointerup", pointerUp);
+/* ===========================
+   UI BASICS
+=========================== */
+const qs = s=>document.querySelector(s);
+const board = qs("#board");
+const netDot = qs("#netDot");
+const netText = qs("#netText");
+const postCountEl = qs("#postCount");
+const peerNameEl = qs("#peerName");
 
-  function render(){
-    const board = document.getElementById("board");
-    board.innerHTML="";
-    Object.values(store).forEach(n=>{
-      if(!n || n.deleted) return;
-      const div = document.createElement("div");
-      div.id = "note_"+n.id;
-      div.className = `note ${n.color}`;
-      div.style.color = n.textColor;
-      div.style.left = (n.x||0) + "px";
-      div.style.top  = (n.y||0) + "px";
-      div.style.transform = `rotate(${n.rot}deg)`;
-      div.innerHTML = `
-        <div class="delete" onclick="event.stopPropagation(); eliminaNota('${n.id}')">×</div>
-        ${n.moderator ? '<div style="position:absolute;top:5px;left:5px;font-size:20px;">☠️</div>' : ''}
-        <div class="text">${n.text}</div>
-        <small>${new Date(n.date).toLocaleString()}</small>
-      `;
-      div.addEventListener("pointerdown",(e)=>{
-        if(e.target.classList.contains("delete")) return;
-        const elRect = div.getBoundingClientRect();
-        drag = {
-          id: n.id, el: div,
-          offsetX: e.clientX - elRect.left,
-          offsetY: e.clientY - elRect.top
-        };
-        div.style.zIndex = 9999;
-        document.body.classList.add("dragging");
-        if(div.setPointerCapture) { try{ div.setPointerCapture(e.pointerId);}catch(_){ } }
-        e.preventDefault();
-      });
-      board.appendChild(div);
-    });
-  }
+qs("#clearLocal").addEventListener("click", (e)=>{ e.preventDefault(); localStorage.removeItem("postit_images"); imagesMap={}; render(); });
 
-  function aggiungiNota(){
-    let text = document.getElementById("noteInput").value.trim();
-    if(!text) return alert("Scrivi qualcosa!");
-    if(text.length > 40) text = text.substring(0,37)+"...";
-    const board = document.getElementById("board");
-    const maxX = Math.max(0, board.clientWidth-150);
-    const maxY = Math.max(0, board.clientHeight-150);
-    let note = {
-      id: Gun.text.random(16), text,
-      date: Date.now(),
-      x: Math.floor(Math.random()*maxX),
-      y: Math.floor(Math.random()*maxY),
-      rot: (Math.random()*10 - 5).toFixed(2)
+/* Network indicator (semplice) */
+let connectedOnce = false;
+function setNetStatus(ok, msg){
+  netDot.className = "dot " + (ok ? "ok" : "warn");
+  netText.textContent = msg || (ok ? "Connesso" : "Connessione…");
+}
+
+/* ===========================
+   PUBBLICAZIONE
+=========================== */
+qs("#publishBtn").addEventListener("click", aggiungiNota);
+
+function aggiungiNota(){
+  let text = qs("#noteInput").value.trim();
+  const file = qs("#imageInput").files[0];
+
+  if(!text && !file){ alert("Scrivi qualcosa o carica un'immagine!"); return; }
+  if(text.length > 70) text = text.substring(0,67) + "...";
+
+  // nota leggera P2P
+  const note = {
+    id: Gun.text.random(16),
+    text,
+    date: Date.now(),
+    x: 0, y: 0,
+    rot: +(Math.random()*10 - 5).toFixed(2),
+    color: qs("#colorSelect").value,
+    textColor: qs("#textColorSelect").value
+  };
+
+  // salva subito su GUN (sincronia tra browser)
+  notesDB.get(note.id).put(note);
+
+  // immagine solo locale (compressa)
+  if(file){
+    if(file.size > 2*1024*1024){ alert("⚠️ Immagine > 2MB. Riducila prima."); }
+    const reader = new FileReader();
+    reader.onload = e=>{
+      const img = new Image();
+      img.onload = ()=>{
+        const max = 150;
+        let w = img.width, h = img.height;
+        if(w>h){ if(w>max){ h*=max/w; w=max; } } else { if(h>max){ w*=max/h; h=max; } }
+        const c = document.createElement("canvas");
+        c.width = Math.max(1,Math.round(w));
+        c.height= Math.max(1,Math.round(h));
+        const ctx = c.getContext("2d");
+        ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(img,0,0,c.width,c.height);
+        const dataUrl = c.toDataURL("image/webp", 0.7);
+        const kb = Math.max(1, Math.round(bytesFromDataURL(dataUrl)/1024));
+        imagesMap[note.id] = { dataUrl, kb };
+        saveImages();
+        render();
+      };
+      img.src = e.target.result;
     };
-    if(text.startsWith("#mod")){
-      note.color="black"; note.textColor="#fff"; note.moderator=true;
-      note.text=text.replace("#mod","").trim();
-    } else {
-      note.color=document.getElementById("colorSelect").value;
-      note.textColor=document.getElementById("textColorSelect").value;
-    }
-    notesDB.get(note.id).put(note);
-    document.getElementById("noteInput").value="";
+    reader.readAsDataURL(file);
+    qs("#imageInput").value="";
   }
 
-  function eliminaNota(id){
-    if(!confirm("Vuoi eliminare questo post-it?")) return;
-    notesDB.get(id).put({deleted:true});
-  }
+  // contatore
+  counterDB.get("total").once(val=> counterDB.get("total").put((val||0)+1) );
 
-  function condividiNota(id){
-    const div = document.getElementById("note_"+id);
-    if(!div) return;
-    html2canvas(div).then(canvas=>{
-      canvas.toBlob(blob=>{
-        const file = new File([blob], "postit.png", {type:"image/png"});
-        if(navigator.canShare && navigator.canShare({files:[file]})){
-          navigator.share({title:"Post-it",text:"📌 Guarda questo post-it:",files:[file]}).catch(()=>{});
-        } else {
-      const link = document.createElement("a");
-          link.href = URL.createObjectURL(blob);
-          link.download = "postit.png";
-          link.click();
-        }
-      });
+  // pulisci input
+  qs("#noteInput").value="";
+}
+
+/* ===========================
+   DRAG TO MOVE (salva su GUN)
+=========================== */
+document.addEventListener("pointermove", e=>{
+  if(!drag) return;
+  const el = drag.el;
+  const rect = board.getBoundingClientRect();
+  const nx = Math.max(0, Math.min(e.clientX-rect.left-drag.ox, board.clientWidth - el.offsetWidth));
+  const ny = Math.max(0, Math.min(e.clientY-rect.top -drag.oy, board.clientHeight- el.offsetHeight));
+  el.style.left = nx+"px"; el.style.top = ny+"px";
+});
+
+document.addEventListener("pointerup", ()=>{
+  if(!drag) return;
+  const { id, el } = drag;
+  const n = store[id]; if(n){
+    n.x = parseInt(el.style.left)||0; n.y = parseInt(el.style.top)||0;
+    notesDB.get(id).put({ x:n.x, y:n.y });
+  }
+  drag = null;
+});
+
+/* ===========================
+   RENDER BOARD
+=========================== */
+function render(){
+  board.innerHTML = "";
+  const keys = Object.keys(store);
+  postCountEl.textContent = keys.length;
+
+  keys.forEach(k=>{
+    const n = store[k];
+    if(!n || n.deleted) return;
+
+    const d = document.createElement("div");
+    d.className = `note ${n.color||'yellow'}`;
+    d.style.color = n.textColor || "#111";
+    d.style.setProperty('--r', (n.rot||0)+'deg');
+    d.style.left = (n.x||0)+"px";
+    d.style.top  = (n.y||0)+"px";
+    d.style.position = "relative";
+
+    const imgInfo = imagesMap[n.id];
+    const imgTag = imgInfo ? `<img class="img" src="${imgInfo.dataUrl}" alt="" />` : "";
+    const kbTag  = imgInfo ? `<div class="imgkb">~${imgInfo.kb} KB</div>` : "";
+
+    d.innerHTML = `
+      <div class="pin"></div>
+      <div class="del" title="Elimina" data-id="${n.id}">×</div>
+      ${imgTag}
+      ${kbTag}
+      <div class="txt">${n.text||""}</div>
+      <div class="date">${new Date(n.date).toLocaleString()}</div>
+      <div class="corner"></div>
+    `;
+
+    d.addEventListener("pointerdown", (e)=>{
+      if(e.target.classList.contains("del")) return;
+      const r = d.getBoundingClientRect();
+      drag = { id: n.id, el: d, ox: e.clientX - r.left, oy: e.clientY - r.top };
     });
-  }
 
-  notesDB.map().on((n,id)=>{
-    if(!n || !n.id || n.deleted){ delete store[id]; }
-    else { store[id]=Object.assign(store[id]||{}, n); }
-    render();
+    d.querySelector(".del").addEventListener("click", (e)=>{
+      e.stopPropagation();
+      const id = e.currentTarget.getAttribute("data-id");
+      notesDB.get(id).put({ deleted:true });
+      if(imagesMap[id]){ delete imagesMap[id]; saveImages(); }
+    });
+
+    board.appendChild(d);
   });
-  </script>
+}
+
+/* ===========================
+   GUN LISTENERS
+=========================== */
+loadImages();
+restoreBackupIfEmpty();
+render();
+
+// status (best-effort)
+setNetStatus(false,"Connessione…");
+peerNameEl.textContent = new URL(peers[0]).host;
+
+notesDB.map().on((n,id)=>{
+  connectedOnce = true;
+  setNetStatus(true,"Connesso");
+  if(!n || !n.id || n.deleted){ delete store[id]; }
+  else { store[id] = Object.assign(store[id]||{}, n); }
+  backupNotesLocally();
+  render();
+});
+
+// contatore globale (non fondamentale, ma carino)
+counterDB.get("total").on(v=>{
+  // non lo mostriamo separatamente, manteniamo solo il conteggio locale in header.
+  // Se vuoi, puoi usarlo qui.
+});
+</script>
 </body>
-</html>   
+</html>
