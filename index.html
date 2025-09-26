@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>sbotto.io - Bacheca P2P</title>
+<title>sbotto.io - Bacheca P2P (per sempre)</title>
 <style>
 body{
   font-family:"Arial Rounded MT Bold", Arial, sans-serif;
@@ -11,6 +11,8 @@ body{
 }
 .container{max-width:1200px; margin:auto; text-align:center;}
 h1{margin-bottom:10px;}
+
+/* Box introduttivo */
 .intro {
   max-width: 800px;
   margin: 10px auto 20px auto;
@@ -24,6 +26,8 @@ h1{margin-bottom:10px;}
   position: relative;
 }
 .info-icon { margin-left: 10px; cursor: pointer; font-size: 18px; }
+
+/* Popup regolamento */
 #regolamentoBox {
   display: none;
   position: fixed;
@@ -49,6 +53,7 @@ h1{margin-bottom:10px;}
   width:100%; height:100%; background: rgba(0,0,0,0.5);
   z-index: 2000;
 }
+
 textarea{
   width:100%; height:80px; padding:10px; border-radius:5px;
   border:1px solid #ccc; resize:none; font-size:14px;
@@ -63,10 +68,13 @@ button{
   background:#ff7043; color:#fff; cursor:pointer; font-weight:bold;
 }
 button:hover{background:#f4511e;}
+
 #board{
   position:relative; width:100%; min-height:800px;
   background:#fafafa; border:2px dashed #ccc; overflow:hidden;
 }
+
+/* Post-it base */
 .note{
   width:130px; height:130px;
   padding:14px 10px 10px 10px;
@@ -81,36 +89,45 @@ button:hover{background:#f4511e;}
 .note:active{cursor:grabbing;}
 .note:hover{ box-shadow:-4px 4px 8px rgba(0,0,0,.35); }
 body.dragging{ user-select:none; }
+
+/* Angolo sollevato */
 .note::after{
   content:""; position:absolute; right:0; bottom:0; width:40px; height:40px;
   background:linear-gradient(135deg, rgba(0,0,0,.25), transparent 70%);
   clip-path:polygon(100% 0, 0 100%, 100% 100%); pointer-events:none;
 }
+
+/* contenuti */
 .note .text{
   font-size:13px; font-weight:bold; line-height:1.3; text-align:center; word-wrap:break-word;
   margin-top:14px;
 }
 .note small{ font-size:10px; color:#444; margin-top:5px; }
-.note .delete{
-  position:absolute; top:6px; right:8px; cursor:pointer;
-  font-weight:bold; font-size:14px; display:none;
-}
-.note:hover .delete{ display:block; }
+
+/* (RIMOSSA) icona elimina */
+
+/* Pin rosso */
 .note::before{
   content:""; width:12px; height:12px;
   background:radial-gradient(circle at 30% 30%, #ff5252, #c62828);
   border-radius:50%; position:absolute; top:6px; left:calc(50% - 6px);
   box-shadow:0 2px 5px rgba(0,0,0,.3);
 }
+
+/* Colori classici */
 .yellow{background:linear-gradient(135deg,#fff59d,#fdd835);}
 .blue  {background:linear-gradient(135deg,#90caf9,#42a5f5);}
 .green {background:linear-gradient(135deg,#a5d6a7,#66bb6a);}
 .pink  {background:linear-gradient(135deg,#f48fb1,#ec407a);}
 .orange{background:linear-gradient(135deg,#ffcc80,#fb8c00);}
 .black {background:linear-gradient(135deg,#000,#333); color:#fff;}
+
+/* Personalizzati solo da # */
 .red    {background:linear-gradient(135deg,#ff8a80,#e53935); color:#fff;}
 .lilla  {background:linear-gradient(135deg,#ce93d8,#8e24aa); color:#fff;}
 .fucsia,.fuxsia {background:linear-gradient(135deg,#f06292,#ad1457); color:#fff;}
+
+/* Ghost (trasparente) */
 .ghost {
   background: rgba(255, 255, 255, 0.05);
   color: rgba(0,0,0,0.3);
@@ -118,6 +135,8 @@ body.dragging{ user-select:none; }
   backdrop-filter: blur(2px);
   box-shadow: none;
 }
+
+/* Madama lampeggiante */
 .madama {
   background:linear-gradient(135deg,#ff1744,#b71c1c);
   color:#fff;
@@ -127,6 +146,8 @@ body.dragging{ user-select:none; }
   from { box-shadow:0 0 5px #ff1744, 0 0 10px #ff1744; }
   to   { box-shadow:0 0 20px #ff1744, 0 0 40px #ff1744; }
 }
+
+/* Zona busta */
 #shareZone {
   position: fixed;
   bottom: 20px;
@@ -139,6 +160,8 @@ body.dragging{ user-select:none; }
   z-index: 2000;
 }
 #shareZone.active { opacity: 1; transform: scale(1.1); }
+
+/* Contatore */
 #counterBox {
   margin-top: 10px;
   font-size: 14px;
@@ -150,6 +173,8 @@ body.dragging{ user-select:none; }
 <body>
   <div class="container">
     <h1>📌 Sbotto un Post-it</h1>
+
+    <!-- Box introduttivo breve -->
     <div class="intro">
        ⚡ Se pensi di muovere un post-it di nascosto… buona fortuna 👀
        <span class="info-icon" onclick="toggleRegolamento()">ℹ️</span>
@@ -180,35 +205,64 @@ body.dragging{ user-select:none; }
         </select>
       </div>
     </div>
-
+   
     <button onclick="aggiungiNota()">Pubblica Post-it</button>
     <div id="counterBox">📝 Totale post-it: 0</div>
     <div id="board"></div>
   </div>
 
+  <!-- Busta di condivisione -->
   <div id="shareZone"></div>
 
+  <!-- Overlay + Box regolamento -->
   <div id="overlay" onclick="toggleRegolamento()"></div>
   <div id="regolamentoBox">
     <div class="close" onclick="toggleRegolamento()">×</div>
     <h2>👋 Benvenuto su sbotto.io</h2>
     <p>Bacheca anonima di post-it collaborativi.<br>Sfogati o lancia idee in tempo reale.</p>
+    <hr>
+    <h2>✨ In Diretta</h2>
+    <p>Ogni post-it che compare qui è stato scritto da qualcuno, da qualche parte, nello stesso momento.</p>
+    <hr>
+    <h2>📜 Regole</h2>
+    <ul>
+      <li>✍️ Messaggi brevi (max 70 caratteri).</li>
+      <li>🚫 No spam o insulti.</li>
+      <li>👻 Alcuni post-it speciali non si cancellano.</li>
+      <li>🤝 Rispetta gli altri e divertiti.</li>
+    </ul>
   </div>
 
+  <!-- GUN + html2canvas -->
   <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
   <script>
-  // ✅ UN SOLO PEER STABILE P2P
+  // ========= PERSISTENZA "PER SEMPRE" =========
   const gun = Gun({
-    peers: ["https://gun.database.eco/gun"]
+    peers:[
+      "https://gun.database.eco/gun",
+      "https://peer.wallie.io/gun",
+      "https://gun-altcoins.herokuapp.com/gun"
+    ],
+    // persistenza locale
+    localStorage: true,
+    radisk: true,
+    uuid: () => Gun.text.random(16)
   });
   const notesDB = gun.get("p2p-postit");
-  const counterDB = gun.get("p2p-postit-counter");
+  const counterDB = gun.get("p2p-postit-counter"); // contatore globale
+
+  // store in RAM
   let store = {};
   let drag = null;
   let totalCounter = 0;
 
+  // chiavi backup locale
+  const LS_BACKUP_KEY = "p2p-postit-backup-v1";
+  const LS_BACKUP_COUNTER_KEY = "p2p-postit-counter-backup-v1";
+
+  // Toggle regolamento
   function toggleRegolamento(){
     const box = document.getElementById("regolamentoBox");
     const overlay = document.getElementById("overlay");
@@ -219,35 +273,61 @@ body.dragging{ user-select:none; }
     }
   }
 
-  function aggiungiNota(){
-    let text = document.getElementById("noteInput").value.trim();
-    if(!text) return alert("Scrivi qualcosa!");
-    if(text.length > 70) text = text.substring(0,67)+"...";
+  // Dragging
+  function pointerMove(e){
+    if(!drag) return;
+    e.preventDefault();
     const board = document.getElementById("board");
-    const maxX = Math.max(0, board.clientWidth-150);
-    const maxY = Math.max(0, board.clientHeight-150);
-    let note = {
-      id: Gun.text.random(16),
-      text, date: Date.now(),
-      x: Math.floor(Math.random()*maxX),
-      y: Math.floor(Math.random()*maxY),
-      rot: (Math.random()*10 - 5).toFixed(2),
-      color: document.getElementById("colorSelect").value,
-      textColor: document.getElementById("textColorSelect").value
-    };
-    notesDB.get(note.id).put(note);
-    counterDB.get("total").once(val=>{
-      const current = val || 0;
-      counterDB.get("total").put(current + 1);
-    });
-    document.getElementById("noteInput").value="";
+    const b = board.getBoundingClientRect();
+    const el = drag.el;
+    let x = e.clientX - b.left - drag.offsetX;
+    let y = e.clientY - b.top  - drag.offsetY;
+    const maxX = board.clientWidth  - el.offsetWidth;
+    const maxY = board.clientHeight - el.offsetHeight;
+    x = Math.max(0, Math.min(x, maxX));
+    y = Math.max(0, Math.min(y, maxY));
+    el.style.left = x + "px";
+    el.style.top  = y + "px";
+
+    const shareZone = document.getElementById("shareZone").getBoundingClientRect();
+    if(e.clientX > shareZone.left && e.clientX < shareZone.right &&
+       e.clientY > shareZone.top && e.clientY < shareZone.bottom){
+        document.getElementById("shareZone").classList.add("active");
+        drag.overShare = true;
+    } else {
+        document.getElementById("shareZone").classList.remove("active");
+        drag.overShare = false;
+    }
   }
 
+  function pointerUp(){
+    if(!drag) return;
+    const { id, el, overShare } = drag;
+    if(overShare){ condividiNota(id); }
+    else {
+      const n = store[id];
+      if(n){ n.x = parseInt(el.style.left)||0; n.y = parseInt(el.style.top)||0;
+        notesDB.get(id).put({ x:n.x, y:n.y });
+      }
+    }
+    el.style.transition = "left 0.5s ease, top 0.5s ease, transform 0.3s ease, box-shadow .15s";
+    document.getElementById("shareZone").classList.remove("active");
+    document.body.classList.remove("dragging");
+    drag = null;
+  }
+  document.addEventListener("pointermove", pointerMove, {passive:false});
+  document.addEventListener("pointerup", pointerUp);
+
+  // Rendering
   function render(){
     const board = document.getElementById("board");
     board.innerHTML="";
     Object.values(store).forEach(n=>{
-      if(!n || n.deleted) return;
+      if(!n) return;
+
+      // **PER SEMPRE**: ignora eventuali flag di cancellazione remoti
+      // if(n.deleted) return;  // <- NON lo facciamo più
+
       const div = document.createElement("div");
       div.id = "note_"+n.id;
       div.className = `note ${n.color}`;
@@ -255,30 +335,181 @@ body.dragging{ user-select:none; }
       div.style.left = (n.x||0) + "px";
       div.style.top  = (n.y||0) + "px";
       div.style.transform = `rotate(${n.rot}deg)`;
+
+      // rimosso pulsante elimina per rendere i post-it permanenti
       div.innerHTML = `
-        <div class="delete" onclick="event.stopPropagation(); eliminaNota('${n.id}')">×</div>
         <div class="text">${n.text}</div>
         <small>${new Date(n.date).toLocaleString()}</small>
       `;
+
+      div.addEventListener("pointerdown",(e)=>{
+        const elRect = div.getBoundingClientRect();
+        drag = { id: n.id, el: div,
+          offsetX: e.clientX - elRect.left,
+          offsetY: e.clientY - elRect.top };
+        div.style.transition = "none";
+        div.style.zIndex = 9999;
+        document.body.classList.add("dragging");
+        if(div.setPointerCapture) { try{ div.setPointerCapture(e.pointerId);}catch(_){ } }
+        e.preventDefault();
+      });
       board.appendChild(div);
     });
   }
 
-  function eliminaNota(id){
-    if(!confirm("Vuoi eliminare questo post-it?")) return;
-    notesDB.get(id).put({deleted:true});
+  // Comandi speciali
+  function parseSpecial(input){
+    const m = input.match(/^\s*#([a-zàèéìòóù]+)\b/i);
+    if(!m) return null;
+    const tag = m[1].toLowerCase();
+    const rest = input.replace(/^\s*#[^\s]+\s*/,'').trim();
+
+    if(tag === 'mod')    return { color:'black',  textColor:'#fff', text:rest };
+    if(tag === 'ghost')  return { color:'ghost',  textColor:'rgba(0,0,0,0.3)', text:rest };
+    if(tag === 'madama') return { color:'madama', textColor:'#fff', text:rest };
+    if(tag === 'red' || tag === 'rosso')   return { color:'red',   textColor:'#fff', text:rest };
+    if(tag === 'lilla')  return { color:'lilla',  textColor:'#fff', text:rest };
+    if(tag === 'fucsia' || tag === 'fuxsia') return { color:'fucsia', textColor:'#fff', text:rest };
+    return null;
   }
 
+  // Aggiungi nota (limite 70 caratteri)
+  function aggiungiNota(){
+    let text = document.getElementById("noteInput").value.trim();
+    if(!text) return alert("Scrivi qualcosa!");
+    if(text.length > 70) text = text.substring(0,67)+"...";
+
+    const board = document.getElementById("board");
+    const maxX = Math.max(0, board.clientWidth-150);
+    const maxY = Math.max(0, board.clientHeight-150);
+
+    let note = {
+      id: Gun.text.random(16),
+      text, date: Date.now(),
+      x: Math.floor(Math.random()*maxX),
+      y: Math.floor(Math.random()*maxY),
+      rot: (Math.random()*10 - 5).toFixed(2)
+    };
+
+    const special = parseSpecial(text);
+    if(special){ Object.assign(note, special); }
+    else {
+      note.color = document.getElementById("colorSelect").value;
+      note.textColor = document.getElementById("textColorSelect").value;
+    }
+
+    // scrivi su GUN
+    notesDB.get(note.id).put(note);
+
+    // incrementa contatore globale (senza decrementi)
+    counterDB.get("total").once(val=>{
+      const current = (typeof val === 'number' ? val : 0);
+      counterDB.get("total").put(current + 1);
+      // aggiorna backup subito
+      try { localStorage.setItem(LS_BACKUP_COUNTER_KEY, String(current + 1)); } catch(e){}
+    });
+
+    // backup veloce locale
+    try {
+      const snapshot = JSON.parse(localStorage.getItem(LS_BACKUP_KEY) || "[]");
+      snapshot.push(note);
+      // per 5000 note: rimaniamo entro limiti; se supera quota, il catch evita errori
+      localStorage.setItem(LS_BACKUP_KEY, JSON.stringify(snapshot));
+    } catch(e){ /* quota piena, ignoriamo: Radisk mantiene comunque */ }
+
+    document.getElementById("noteInput").value="";
+  }
+
+  // (RIMOSSA) Elimina nota: disabilitata per "per sempre"
+  // function eliminaNota(id){}
+
+  // Condividi nota
+  function condividiNota(id){
+    const div = document.getElementById("note_"+id);
+    if(!div) return;
+    html2canvas(div).then(canvas=>{
+      canvas.toBlob(blob=>{
+        const file = new File([blob], "postit.png", {type:"image/png"});
+        if(navigator.canShare && navigator.canShare({files:[file]})){
+          navigator.share({title:"Post-it",text:"📌 Guarda questo post-it:",files:[file]}).catch(()=>{});
+        } else {
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(blob);
+          link.download = "postit.png";
+          link.click();
+        }
+      });
+    });
+  }
+
+  // ======== CARICAMENTO INIZIALE PERSISTENTE ========
+  let initialLoadDone = false;
+
+  // 1) Recupera TUTTE le note già salvate una volta (persistenza)
+  notesDB.map().once((n,id)=>{
+    if(n && n.id){
+      // Ignora cancellazioni remote
+      if(n.deleted) { n.deleted = false; }
+      store[id]=Object.assign(store[id]||{}, n);
+    }
+  });
+
+  // 2) Ascolta cambi live
   notesDB.map().on((n,id)=>{
-    if(!n || !n.id || n.deleted){ delete store[id]; }
-    else { store[id]=Object.assign(store[id]||{}, n); }
+    if(n && n.id){
+      if(n.deleted){ /* ignoriamo */ return; }
+      store[id]=Object.assign(store[id]||{}, n);
+    }
     render();
   });
 
+  // 3) Fallback: se entro 2s non abbiamo niente, ripristina da backup locale
+  setTimeout(()=>{
+    if(Object.keys(store).length === 0){
+      try{
+        const backup = JSON.parse(localStorage.getItem(LS_BACKUP_KEY) || "[]");
+        if(Array.isArray(backup) && backup.length){
+          backup.forEach(n => {
+            store[n.id] = n;
+            // rimettiamo anche su GUN se mancasse
+            notesDB.get(n.id).put(n);
+          });
+        }
+      }catch(e){}
+      render();
+    }
+    initialLoadDone = true;
+  }, 2000);
+
+  // Contatore globale (con backup)
   counterDB.get("total").on(val=>{
-    totalCounter = val || 0;
+    totalCounter = (typeof val === 'number' ? val : 0);
+    if(!val){
+      // prova ripristino da backup locale
+      const b = parseInt(localStorage.getItem(LS_BACKUP_COUNTER_KEY)||"0",10);
+      if(b>0){ totalCounter=b; counterDB.get("total").put(b); }
+    }
     document.getElementById("counterBox").textContent = "📝 Totale post-it: " + totalCounter;
   });
+
+  // Backup periodico locale (ogni 60s)
+  setInterval(()=>{
+    try {
+      const arr = Object.values(store);
+      localStorage.setItem(LS_BACKUP_KEY, JSON.stringify(arr));
+      localStorage.setItem(LS_BACKUP_COUNTER_KEY, String(totalCounter||0));
+    } catch(e){ /* ignoriamo quote error */ }
+  }, 60000);
+
+  // Backup alla chiusura pagina
+  window.addEventListener('beforeunload', ()=>{
+    try {
+      const arr = Object.values(store);
+      localStorage.setItem(LS_BACKUP_KEY, JSON.stringify(arr));
+      localStorage.setItem(LS_BACKUP_COUNTER_KEY, String(totalCounter||0));
+    } catch(e){}
+  });
+
   </script>
 </body>
 </html>
