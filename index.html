@@ -1,9 +1,9 @@
-Ecco il codice <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>sbotto.io - Bacheca P2P</title>
+<title>sbotto.io - Bacheca P2P (Stabile)</title>
 <style>
 body{
   font-family:"Arial Rounded MT Bold", Arial, sans-serif;
@@ -76,8 +76,8 @@ button:hover{background:#f4511e;}
 
 /* Post-it base */
 .note{
-  width:130px; height:130px;
-  padding:14px 10px 10px 10px;
+  width:130px; height:170px;
+  padding:10px;
   border-radius:2px;
   position:absolute; overflow:hidden;
   cursor:grab;
@@ -100,9 +100,17 @@ body.dragging{ user-select:none; }
 /* contenuti */
 .note .text{
   font-size:13px; font-weight:bold; line-height:1.3; text-align:center; word-wrap:break-word;
-  margin-top:14px;
+  margin-top:6px;
 }
-.note small{ font-size:10px; color:#444; margin-top:5px; }
+.note small{ font-size:10px; color:#444; }
+
+/* peso immagine (dentro post-it) */
+.note .imgkb {
+  font-size:10px;
+  color:#555;
+  margin-top:4px;
+  opacity:0.8;
+}
 
 /* icona elimina */
 .note .delete{
@@ -179,7 +187,6 @@ body.dragging{ user-select:none; }
   <div class="container">
     <h1>📌 Sbotto un Post-it</h1>
 
-    <!-- Box introduttivo breve -->
     <div class="intro">
        ⚡ Se pensi di muovere un post-it di nascosto… buona fortuna 👀
        <span class="info-icon" onclick="toggleRegolamento()">ℹ️</span>
@@ -208,6 +215,10 @@ body.dragging{ user-select:none; }
           <option value="#8e24aa">Viola</option>
           <option value="#ffffff">Bianco</option>
         </select>
+      </div>
+      <div>
+        <label>Sticker fotografico:</label>
+        <input type="file" id="imageInput" accept="image/*">
       </div>
     </div>
    
@@ -243,6 +254,7 @@ body.dragging{ user-select:none; }
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
   <script>
+  // ======= CONFIG E STATO =======
   const gun = Gun({
     peers:[
       "https://gun.database.eco/gun",
@@ -252,22 +264,61 @@ body.dragging{ user-select:none; }
   });
   const notesDB = gun.get("p2p-postit");
   const counterDB = gun.get("p2p-postit-counter"); // contatore globale
-  let store = {};
+
+  let store = {};          // note dal DB
+  let imagesMap = {};      // id -> {dataUrl, kb} (SOLO locale)
   let drag = null;
   let totalCounter = 0;
 
-  // Toggle regolamento
+  // ======= UTILS =======
   function toggleRegolamento(){
     const box = document.getElementById("regolamentoBox");
     const overlay = document.getElementById("overlay");
-    if(box.style.display === "block"){
-      box.style.display = "none"; overlay.style.display = "none";
-    } else {
-      box.style.display = "block"; overlay.style.display = "block";
+    const on = box.style.display === "block";
+    box.style.display = on ? "none" : "block";
+    overlay.style.display = on ? "none" : "block";
+  }
+
+  function dataUrlBytes(dataUrl){
+    const base64 = (dataUrl||"").split(',')[1] || "";
+    const len = base64.length;
+    const padding = (base64.endsWith("==") ? 2 : (base64.endsWith("=") ? 1 : 0));
+    return Math.max(0, Math.floor(len * 3 / 4) - padding);
+  }
+
+  function loadImagesMap(){
+    try{
+      imagesMap = JSON.parse(localStorage.getItem("postit_images")||"{}");
+    }catch(_){ imagesMap = {}; }
+  }
+  function saveImagesMap(){
+    try{
+      localStorage.setItem("postit_images", JSON.stringify(imagesMap));
+    }catch(e){
+      console.warn("Impossibile salvare immagini in localStorage:", e);
+      alert("⚠️ Memoria locale piena o bloccata: l'immagine non verrà salvata, ma il post-it di testo sì.");
     }
   }
 
-  // Dragging
+  function backupNotesLocally(){
+    try{
+      // salviamo solo campi testuali leggeri
+      localStorage.setItem("postit_backup", JSON.stringify(store));
+    }catch(_){}
+  }
+  function restoreBackupIfEmpty(){
+    const boardHasNotes = Object.keys(store).length > 0;
+    if(boardHasNotes) return;
+    try{
+      const b = JSON.parse(localStorage.getItem("postit_backup")||"{}");
+      if(b && Object.keys(b).length){
+        store = b;
+        render(); // mostra subito qualcosa anche se la rete P2P è lenta
+      }
+    }catch(_){}
+  }
+
+  // ======= DRAG =======
   function pointerMove(e){
     if(!drag) return;
     e.preventDefault();
@@ -278,29 +329,23 @@ body.dragging{ user-select:none; }
     let y = e.clientY - b.top  - drag.offsetY;
     const maxX = board.clientWidth  - el.offsetWidth;
     const maxY = board.clientHeight - el.offsetHeight;
-    x = Math.max(0, Math.min(x, maxX));
-    y = Math.max(0, Math.min(y, maxY));
-    el.style.left = x + "px";
-    el.style.top  = y + "px";
+    el.style.left = Math.max(0, Math.min(x, maxX)) + "px";
+    el.style.top  = Math.max(0, Math.min(y, maxY)) + "px";
 
     const shareZone = document.getElementById("shareZone").getBoundingClientRect();
-    if(e.clientX > shareZone.left && e.clientX < shareZone.right &&
-       e.clientY > shareZone.top && e.clientY < shareZone.bottom){
-        document.getElementById("shareZone").classList.add("active");
-        drag.overShare = true;
-    } else {
-        document.getElementById("shareZone").classList.remove("active");
-        drag.overShare = false;
-    }
+    const over = (e.clientX > shareZone.left && e.clientX < shareZone.right &&
+                  e.clientY > shareZone.top  && e.clientY < shareZone.bottom);
+    document.getElementById("shareZone").classList.toggle("active", over);
+    drag.overShare = over;
   }
-
   function pointerUp(){
     if(!drag) return;
     const { id, el, overShare } = drag;
     if(overShare){ condividiNota(id); }
     else {
       const n = store[id];
-      if(n){ n.x = parseInt(el.style.left)||0; n.y = parseInt(el.style.top)||0;
+      if(n){
+        n.x = parseInt(el.style.left)||0; n.y = parseInt(el.style.top)||0;
         notesDB.get(id).put({ x:n.x, y:n.y });
       }
     }
@@ -312,7 +357,7 @@ body.dragging{ user-select:none; }
   document.addEventListener("pointermove", pointerMove, {passive:false});
   document.addEventListener("pointerup", pointerUp);
 
-  // Rendering
+  // ======= RENDER =======
   function render(){
     const board = document.getElementById("board");
     board.innerHTML="";
@@ -331,11 +376,22 @@ body.dragging{ user-select:none; }
         deleteBtn = `<div class="delete" onclick="event.stopPropagation(); eliminaNota('${n.id}')">×</div>`;
       }
 
+      // immagine SOLO da localStorage (mai da GUN)
+      const imgInfo = imagesMap[n.id];
+      const imgTag = imgInfo && imgInfo.dataUrl
+        ? `<img src="${imgInfo.dataUrl}" style="max-width:90px; max-height:90px; border-radius:8px; margin-top:5px;">`
+        : "";
+      const kbTag = imgInfo && imgInfo.kb ? `<div class="imgkb">~${imgInfo.kb} KB</div>` : "";
+
+      // NB: n.text è gestito così com’era nel tuo codice
       div.innerHTML = `
         ${deleteBtn}
-        <div class="text">${n.text}</div>
+        ${imgTag}
+        ${kbTag}
+        <div class="text">${n.text || ""}</div>
         <small>${new Date(n.date).toLocaleString()}</small>
       `;
+
       div.addEventListener("pointerdown",(e)=>{
         if(e.target.classList.contains("delete")) return;
         const elRect = div.getBoundingClientRect();
@@ -348,11 +404,12 @@ body.dragging{ user-select:none; }
         if(div.setPointerCapture) { try{ div.setPointerCapture(e.pointerId);}catch(_){ } }
         e.preventDefault();
       });
+
       board.appendChild(div);
     });
   }
 
-  // Comandi speciali
+  // ======= COMANDI SPECIALI =======
   function parseSpecial(input){
     const m = input.match(/^\s*#([a-zàèéìòóù]+)\b/i);
     if(!m) return null;
@@ -368,15 +425,18 @@ body.dragging{ user-select:none; }
     return null;
   }
 
-  // Aggiungi nota (limite 70 caratteri)
+  // ======= CREA NOTA =======
   function aggiungiNota(){
     let text = document.getElementById("noteInput").value.trim();
-    if(!text) return alert("Scrivi qualcosa!");
+    if(!text && !document.getElementById("imageInput").files.length){
+      alert("Scrivi qualcosa o carica un'immagine!");
+      return;
+    }
     if(text.length > 70) text = text.substring(0,67)+"...";
 
     const board = document.getElementById("board");
     const maxX = Math.max(0, board.clientWidth-150);
-    const maxY = Math.max(0, board.clientHeight-150);
+    const maxY = Math.max(0, board.clientHeight-170);
 
     let note = {
       id: Gun.text.random(16),
@@ -393,9 +453,59 @@ body.dragging{ user-select:none; }
       note.textColor = document.getElementById("textColorSelect").value;
     }
 
+    // 1) Salva subito la nota testuale su GUN (leggera e sicura)
     notesDB.get(note.id).put(note);
 
-    // incrementa contatore globale
+    // 2) Gestione immagine SOLO locale
+    const fileInput = document.getElementById("imageInput");
+    const file = fileInput.files[0];
+
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) { // 2MB guard rail
+        alert("⚠️ L'immagine supera 2MB. Riducila prima di caricarla.");
+      } else {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = new Image();
+          img.onload = function() {
+            const canvas = document.createElement("canvas");
+            const maxSize = 150; // lato lungo max
+            let width = img.width, height = img.height;
+
+            if (width > height) {
+              if (width > maxSize) { height *= maxSize / width; width = maxSize; }
+            } else {
+              if (height > maxSize) { width *= maxSize / height; height = maxSize; }
+            }
+
+            canvas.width = Math.max(1, Math.round(width));
+            canvas.height = Math.max(1, Math.round(height));
+            const ctx = canvas.getContext("2d");
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "high";
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            // WebP leggero
+            const dataUrl = canvas.toDataURL("image/webp", 0.7);
+            const kb = Math.max(1, Math.round(dataUrlBytes(dataUrl)/1024));
+
+            // Salva SOLO in localStorage
+            loadImagesMap();
+            imagesMap[note.id] = { dataUrl, kb };
+            saveImagesMap();
+
+            // Aggiorna UI locale
+            store[note.id] = Object.assign(store[note.id]||{}, note);
+            render();
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+      fileInput.value = ""; // reset input
+    }
+
+    // contatore globale
     counterDB.get("total").once(val=>{
       const current = val || 0;
       counterDB.get("total").put(current + 1);
@@ -404,13 +514,15 @@ body.dragging{ user-select:none; }
     document.getElementById("noteInput").value="";
   }
 
-  // Elimina nota
+  // ======= ELIMINA / CONDIVIDI =======
   function eliminaNota(id){
     if(!confirm("Vuoi eliminare questo post-it?")) return;
     notesDB.get(id).put({deleted:true});
+    // elimina anche immagine locale, se presente
+    loadImagesMap();
+    if(imagesMap[id]) { delete imagesMap[id]; saveImagesMap(); }
   }
 
-  // Condividi nota
   function condividiNota(id){
     const div = document.getElementById("note_"+id);
     if(!div) return;
@@ -429,14 +541,23 @@ body.dragging{ user-select:none; }
     });
   }
 
-  // Ascolta database
+  // ======= ASCOLTO DB + RESILIENZA =======
+  // 1) carica immagini locali all'avvio
+  loadImagesMap();
+
+  // 2) ripristina un backup locale se GUN tarda
+  restoreBackupIfEmpty();
+
+  // 3) ascolta grafo p2p
   notesDB.map().on((n,id)=>{
     if(!n || !n.id || n.deleted){ delete store[id]; }
     else { store[id]=Object.assign(store[id]||{}, n); }
     render();
+    // aggiorna backup locale solo con dati leggeri
+    backupNotesLocally();
   });
 
-  // Ascolta contatore globale
+  // contatore globale
   counterDB.get("total").on(val=>{
     totalCounter = val || 0;
     document.getElementById("counterBox").textContent = "📝 Totale post-it: " + totalCounter;
