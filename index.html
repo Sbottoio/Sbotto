@@ -320,12 +320,12 @@ function aggiungiNota(){
   document.getElementById("noteInput").value="";
 }
 
-// 🧠 Hashtag speciali (qui c’è #arrabbiato!)
+// 🧠 Rileva hashtag speciali e assegna sticker
 function parseSpecial(input){
   const m = input.match(/^\s*#([a-zàèéìòóù]+)\b/i);
   if(!m) return null;
   const tag = m[1].toLowerCase();
-  const rest = input.replace(/^\s*#[^\s]+\s*/,'').trim();
+  const rest = input.replace(/^\s*#[^\s]+\s*/, '').trim();
 
   if(tag === 'mod')    return { color:'black',  textColor:'#fff', text:rest };
   if(tag === 'ghost')  return { color:'ghost',  textColor:'rgba(0,0,0,0.3)', text:rest };
@@ -334,8 +334,8 @@ function parseSpecial(input){
   if(tag === 'lilla')  return { color:'lilla',  textColor:'#fff', text:rest };
   if(tag === 'fucsia' || tag === 'fuxsia') return { color:'fucsia', textColor:'#fff', text:rest };
 
-  // 👇 ecco il nostro sticker arrabbiato
-  if(tag === 'arrabbiato') {
+  // 👇 Sticker arrabbiato
+  if(tag === 'arrabbiato'){
     return {
       color: 'yellow',
       textColor: '#000',
@@ -344,9 +344,38 @@ function parseSpecial(input){
     };
   }
 
+  // 😀 Sticker felice
+  if(tag === 'felice'){
+    return {
+      color: 'yellow',
+      textColor: '#000',
+      text: rest,
+      image: 'stickers/felice.jpg'
+    };
+  }
+
+  // 😴 Sticker stanco
+  if(tag === 'stanco'){
+    return {
+      color: 'yellow',
+      textColor: '#000',
+      text: rest,
+      image: 'stickers/stanco.jpg'
+    };
+  }
+
+  // 👅 Sticker linguaccia
+  if(tag === 'linguaccia'){
+    return {
+      color: 'yellow',
+      textColor: '#000',
+      text: rest,
+      image: 'stickers/linguaccia.jpg'
+    };
+  }
+
   return null;
 }
-
 // 🗑️ Elimina post-it
 function eliminaNota(id){
   if(confirm("Vuoi eliminare questo post-it?")){
